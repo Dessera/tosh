@@ -1,7 +1,9 @@
 #include "desh/repl.hpp"
 #include "desh/builtins/base.hpp"
+#include "desh/builtins/cd.hpp"
 #include "desh/builtins/check_args.hpp"
 #include "desh/builtins/echo.hpp"
+#include "desh/builtins/exec.hpp"
 #include "desh/builtins/exit.hpp"
 #include "desh/builtins/pwd.hpp"
 #include "desh/builtins/type.hpp"
@@ -16,25 +18,6 @@
 #include <string>
 #include <sys/wait.h>
 
-namespace {
-
-std::vector<char*>
-token_to_args(const std::vector<std::string>& tokens)
-{
-  std::vector<char*> args{};
-  args.reserve(tokens.size() + 1);
-
-  for (const auto& token : tokens) {
-    args.push_back(const_cast<char*>(token.c_str()));
-  }
-
-  args.push_back(nullptr);
-
-  return args;
-}
-
-}
-
 namespace desh::repl {
 
 Repl::Repl()
@@ -47,8 +30,10 @@ Repl::Repl()
           std::shared_ptr<builtins::BaseCommand>(new builtins::Echo()) },
         { "type",
           std::shared_ptr<builtins::BaseCommand>(new builtins::Type()) },
-        { "pwd",
-          std::shared_ptr<builtins::BaseCommand>(new builtins::Pwd()) } })
+        { "pwd", std::shared_ptr<builtins::BaseCommand>(new builtins::Pwd()) },
+        { "cd", std::shared_ptr<builtins::BaseCommand>(new builtins::Cd()) },
+        { "exec",
+          std::shared_ptr<builtins::BaseCommand>(new builtins::Exec()) } })
 {
 }
 
@@ -66,34 +51,20 @@ Repl::run()
 
     parser::parse_args(token_buffer, buffer);
 
+    // null -> next line
     if (token_buffer.empty()) {
       continue;
     }
 
-    if (auto it = _builtins.find(token_buffer[0]); it != _builtins.end()) {
-      it->second->execute((*this), token_buffer);
+    // builtin -> execute builtin
+    if (execute_builtin(token_buffer[0], token_buffer) == EXIT_SUCCESS) {
       continue;
     }
 
-    if (auto cmd = parser::detect_command(token_buffer[0]); cmd.has_value()) {
-      if (auto pid = fork(); pid == 0) {
-        auto token_buffer_cstr = token_to_args(token_buffer);
-
-        if (execvp(cmd.value().c_str(), token_buffer_cstr.data()) == -1) {
-          std::println("exec failed: {}", std::strerror(errno));
-          exit(EXIT_FAILURE);
-        }
-      } else if (pid > 0) {
-        wait(nullptr);
-      } else {
-        std::println(
-          "{} fork failed: {}", token_buffer[0], std::strerror(errno));
-      }
-
-      continue;
-    }
-
-    std::println("{}: not found", token_buffer[0]);
+    // not builtin -> exec builtin
+    auto exec_args = token_buffer;
+    exec_args.insert(exec_args.begin(), "exec");
+    execute_builtin("exec", exec_args);
   }
 }
 
@@ -101,6 +72,17 @@ bool
 Repl::has_builtin(const std::string& name) const
 {
   return _builtins.find(name) != _builtins.end();
+}
+
+int
+Repl::execute_builtin(const std::string& name,
+                      const std::vector<std::string>& args)
+{
+  if (!has_builtin(name)) {
+    return EXIT_FAILURE;
+  }
+
+  return _builtins.at(name)->execute((*this), args);
 }
 
 }

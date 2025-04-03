@@ -13,7 +13,7 @@ Type::execute(repl::Repl& repl, const std::vector<std::string>& args)
 {
 
   if (args.size() == 1) {
-    std::println("usage: type <symbol>");
+    std::println("usage: {} <symbol>", args[0]);
     return EXIT_FAILURE;
   }
 

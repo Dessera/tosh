@@ -17,6 +17,8 @@ public:
   [[noreturn]] void run();
 
   [[nodiscard]] bool has_builtin(const std::string& name) const;
+  int execute_builtin(const std::string& name,
+                      const std::vector<std::string>& args);
 };
 
 }

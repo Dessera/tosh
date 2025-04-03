@@ -41,6 +41,10 @@ parse_args(std::vector<std::string>& buffer, std::string_view raw)
     }
 
     start = end + 1;
+
+    if (start >= raw.size()) {
+      break;
+    }
   }
 }
 

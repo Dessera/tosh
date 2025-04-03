@@ -10,8 +10,10 @@ if get_option('buildtype') == 'debug'
 endif
 
 lib_src = files(
+  'src/builtins/cd.cpp',
   'src/builtins/check_args.cpp',
   'src/builtins/echo.cpp',
+  'src/builtins/exec.cpp',
   'src/builtins/exit.cpp',
   'src/builtins/pwd.cpp',
   'src/builtins/type.cpp',
