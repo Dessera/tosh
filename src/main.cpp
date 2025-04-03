@@ -5,5 +5,5 @@ main()
 {
   using desh::repl::Repl;
 
-  return Repl().run();
+  Repl().run();
 }

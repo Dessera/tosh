@@ -3,3 +3,5 @@ builddir
 .direnv
 result
 result-*
+.vscode
+.envrc

@@ -5,10 +5,18 @@ project(
   default_options: ['warning_level=3', 'cpp_std=gnu++26'],
 )
 
+if get_option('buildtype') == 'debug'
+  # add_project_arguments('-D_FORTIFY_SOURCE=0', language: 'cpp')
+endif
+
 lib_src = files(
-  'src/builtins/base.cpp',
+  'src/builtins/check_args.cpp',
+  'src/builtins/echo.cpp',
   'src/builtins/exit.cpp',
+  'src/builtins/pwd.cpp',
+  'src/builtins/type.cpp',
   'src/desh.cpp',
+  'src/parser.cpp',
   'src/repl.cpp',
 )
 lib_inc = include_directories('include')

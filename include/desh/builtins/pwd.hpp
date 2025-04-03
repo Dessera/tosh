@@ -4,7 +4,7 @@
 
 namespace desh::builtins {
 
-class Exit : public BaseCommand
+class Pwd : public BaseCommand
 {
 public:
   int execute(repl::Repl& repl, const std::vector<std::string>& args) override;

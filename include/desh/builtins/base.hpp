@@ -1,20 +1,23 @@
 #pragma once
 
 #include <string>
-#include <string_view>
-#include <variant>
 #include <vector>
 
-namespace desh::builtins {
+namespace desh::repl {
 
-using CommandArgType = std::variant<std::string, int, double, bool>;
+class Repl;
+
+}
+
+namespace desh::builtins {
 
 class BaseCommand
 {
 public:
   virtual ~BaseCommand() = default;
 
-  virtual int execute(const std::vector<std::string_view>& args) = 0;
+  virtual int execute(repl::Repl& repl,
+                      const std::vector<std::string>& args) = 0;
 };
 
 }

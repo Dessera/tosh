@@ -14,11 +14,9 @@ private:
 public:
   Repl();
 
-  int run();
+  [[noreturn]] void run();
 
-private:
-  void _split_command(std::vector<std::string_view>& buffer,
-                      std::string_view command);
+  [[nodiscard]] bool has_builtin(const std::string& name) const;
 };
 
 }

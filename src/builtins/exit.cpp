@@ -6,9 +6,18 @@
 namespace desh::builtins {
 
 int
-Exit::execute(const std::vector<std::string_view>& /*args*/)
+Exit::execute(repl::Repl& /*repl*/, const std::vector<std::string>& args)
 {
-  std::exit(EXIT_SUCCESS);
+  int status = EXIT_SUCCESS;
+  if (args.size() > 1) {
+    try {
+      status = std::stoi(args[1]);
+    } catch (...) {
+      status = EXIT_FAILURE;
+    }
+  }
+
+  std::exit(status);
 }
 
 }
