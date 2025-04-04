@@ -7,7 +7,7 @@
 namespace desh::builtins {
 
 int
-CheckArgs::execute(repl::Repl& /*repl*/, const std::vector<std::string>& args)
+CheckArgs::execute(repl::Repl& /*repl*/, std::span<const std::string> args)
 {
   std::println("Checking arguments:");
   for (const auto& arg : args) {

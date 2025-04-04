@@ -26,7 +26,7 @@ to_cstr(const std::string& str)
 namespace desh::builtins {
 
 int
-Exec::execute(repl::Repl& /*repl*/, const std::vector<std::string>& args)
+Exec::execute(repl::Repl& /*repl*/, std::span<const std::string> args)
 {
   namespace views = std::ranges::views;
 
@@ -37,6 +37,7 @@ Exec::execute(repl::Repl& /*repl*/, const std::vector<std::string>& args)
 
   auto exec_args = args | views::drop(1) | views::transform(to_cstr) |
                    std::ranges::to<std::vector<char*>>();
+  exec_args.push_back(nullptr);
 
   if (auto cmd = parser::detect_command(exec_args[0]); cmd.has_value()) {
     if (auto pid = fork(); pid == 0) {

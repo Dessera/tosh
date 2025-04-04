@@ -9,9 +9,8 @@
 namespace desh::builtins {
 
 int
-Type::execute(repl::Repl& repl, const std::vector<std::string>& args)
+Type::execute(repl::Repl& repl, std::span<const std::string> args)
 {
-
   if (args.size() == 1) {
     std::println("usage: {} <symbol>", args[0]);
     return EXIT_FAILURE;

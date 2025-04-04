@@ -8,7 +8,7 @@
 namespace desh::builtins {
 
 int
-Echo::execute(repl::Repl& /*repl*/, const std::vector<std::string>& args)
+Echo::execute(repl::Repl& /*repl*/, std::span<const std::string> args)
 {
   if (args.size() == 1) {
     std::println("usage: {} [string ...]", args[0]);

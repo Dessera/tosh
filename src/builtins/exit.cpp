@@ -6,7 +6,7 @@
 namespace desh::builtins {
 
 int
-Exit::execute(repl::Repl& /*repl*/, const std::vector<std::string>& args)
+Exit::execute(repl::Repl& /*repl*/, std::span<const std::string> args)
 {
   int status = EXIT_SUCCESS;
   if (args.size() > 1) {

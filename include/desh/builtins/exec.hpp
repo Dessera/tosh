@@ -7,7 +7,7 @@ namespace desh::builtins {
 class Exec : public BaseCommand
 {
 public:
-  int execute(repl::Repl& repl, const std::vector<std::string>& args) override;
+  int execute(repl::Repl& repl, std::span<const std::string> args) override;
 };
 
 }

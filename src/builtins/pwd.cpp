@@ -10,7 +10,7 @@
 namespace desh::builtins {
 
 int
-Pwd::execute(repl::Repl& /*repl*/, const std::vector<std::string>& /*args*/)
+Pwd::execute(repl::Repl& /*repl*/, std::span<const std::string> /*args*/)
 {
   std::println("{}", std::filesystem::current_path().string());
 

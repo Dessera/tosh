@@ -27,27 +27,6 @@ split_string(std::string_view str, char delimiter)
 
 namespace desh::parser {
 
-void
-parse_args(std::vector<std::string>& buffer, std::string_view raw)
-{
-  std::string_view::size_type start = 0;
-  std::string_view::size_type end = 0;
-
-  while (end != std::string_view::npos) {
-    end = raw.find(' ', start);
-
-    if (end != start) {
-      buffer.emplace_back(raw.substr(start, end - start));
-    }
-
-    start = end + 1;
-
-    if (start >= raw.size()) {
-      break;
-    }
-  }
-}
-
 std::optional<std::string>
 detect_command(std::string_view command)
 {
@@ -69,4 +48,93 @@ detect_command(std::string_view command)
 
   return std::nullopt;
 }
+
+TokenBuffer
+TokenBuffer::parse(std::string_view raw)
+{
+  // TokenBuffer buffer;
+  std::vector<std::string> tokens{};
+  std::string token_buffer{};
+
+  char stop_quote = '\0';
+  bool in_quotes = false;
+
+  tokens.emplace_back(""); // placeholder for the builtin
+
+  std::string_view::iterator start = raw.begin();
+  std::string_view::iterator it = raw.begin();
+  // NOLINTNEXTLINE
+  while (it != raw.end()) {
+    if (*it == ' ') {
+      if (!in_quotes) {
+        if (start != it) {
+          // tokens.emplace_back(start, it);
+          tokens.push_back(token_buffer);
+          token_buffer.clear();
+        }
+        // NOLINTNEXTLINE
+        start = it + 1;
+      } else {
+        token_buffer += *it;
+      }
+    } else if (*it == '"' || *it == '\'') {
+      if (in_quotes && stop_quote == *it) {
+        in_quotes = false;
+      } else {
+        in_quotes = true;
+        stop_quote = *it;
+      }
+    } else if (*it == '\\') {
+      if (it + 1 != raw.end()) {
+        if (in_quotes) {
+          if (*(it + 1) == '\\' || *(it + 1) == stop_quote) {
+            token_buffer += *(it + 1);
+          } else {
+            token_buffer += *it;
+            token_buffer += *(it + 1);
+          }
+        } else {
+          token_buffer += *(it + 1);
+        }
+        ++it;
+      }
+    } else {
+      token_buffer += *it;
+    }
+
+    ++it;
+  }
+
+  if (start != raw.end()) {
+    tokens.push_back(token_buffer);
+  }
+
+  return TokenBuffer{ std::move(tokens) };
+}
+
+TokenBuffer::TokenBuffer(std::vector<std::string> tokens)
+  : _tokens{ std::move(tokens) }
+{
+}
+
+std::span<const std::string>
+TokenBuffer::args() const
+{
+  return std::span(_tokens).subspan(1);
+}
+
+bool
+TokenBuffer::is_empty() const
+{
+  return _tokens.size() == 1;
+}
+
+std::span<const std::string>
+TokenBuffer::args_with_prefix(const std::string& prefix)
+{
+  // nobody can touch this except through this function
+  _tokens.front() = prefix;
+  return _tokens;
+}
+
 }

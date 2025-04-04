@@ -1,7 +1,7 @@
 #pragma once
 
+#include <span>
 #include <string>
-#include <vector>
 
 namespace desh::repl {
 
@@ -16,8 +16,7 @@ class BaseCommand
 public:
   virtual ~BaseCommand() = default;
 
-  virtual int execute(repl::Repl& repl,
-                      const std::vector<std::string>& args) = 0;
+  virtual int execute(repl::Repl& repl, std::span<const std::string> args) = 0;
 };
 
 }

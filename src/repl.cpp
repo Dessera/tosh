@@ -40,31 +40,26 @@ Repl::Repl()
 void
 Repl::run()
 {
-  std::string buffer{};
-  std::vector<std::string> token_buffer{};
-
   while (true) {
-    token_buffer.clear();
-
     std::print("$ ");
-    std::getline(std::cin, buffer);
+    std::getline(std::cin, _buffer);
 
-    parser::parse_args(token_buffer, buffer);
+    _parser = parser::TokenBuffer::parse(_buffer);
 
     // null -> next line
-    if (token_buffer.empty()) {
+    if (_parser.is_empty()) {
       continue;
     }
 
     // builtin -> execute builtin
-    if (execute_builtin(token_buffer[0], token_buffer) == EXIT_SUCCESS) {
+    auto args = _parser.args();
+    if (has_builtin(args[0])) {
+      execute_builtin(args[0], args);
       continue;
     }
 
     // not builtin -> exec builtin
-    auto exec_args = token_buffer;
-    exec_args.insert(exec_args.begin(), "exec");
-    execute_builtin("exec", exec_args);
+    execute_builtin("exec", _parser.args_with_prefix("exec"));
   }
 }
 
@@ -76,7 +71,7 @@ Repl::has_builtin(const std::string& name) const
 
 int
 Repl::execute_builtin(const std::string& name,
-                      const std::vector<std::string>& args)
+                      std::span<const std::string> args)
 {
   if (!has_builtin(name)) {
     return EXIT_FAILURE;
