@@ -17,8 +17,8 @@ lib_src = files(
   'src/builtins/exit.cpp',
   'src/builtins/pwd.cpp',
   'src/builtins/type.cpp',
-  'src/tosh.cpp',
   'src/parser.cpp',
+  'src/parser/query.cpp',
   'src/parser/token/backslash.cpp',
   'src/parser/token/base.cpp',
   'src/parser/token/expr.cpp',
@@ -26,6 +26,7 @@ lib_src = files(
   'src/parser/token/quote.cpp',
   'src/parser/token/root.cpp',
   'src/repl.cpp',
+  'src/tosh.cpp',
 )
 lib_inc = include_directories('include')
 

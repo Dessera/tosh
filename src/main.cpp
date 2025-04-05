@@ -5,5 +5,6 @@ int
 main()
 {
   using tosh::repl::Repl;
+
   Repl().run();
 }

@@ -1,9 +1,11 @@
 #include "tosh/parser/token/backslash.hpp"
+#include <cstddef>
 
 namespace tosh::parser {
 
-BackslashToken::BackslashToken(char quote)
-  : BaseToken(TokenType::BACKSLASH)
+// NOLINTNEXTLINE
+BackslashToken::BackslashToken(char quote, size_t level)
+  : BaseToken(TokenType::BACKSLASH, level)
   , _quote(quote)
 {
 }

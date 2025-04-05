@@ -1,8 +1,10 @@
 #include "tosh/parser.hpp"
+#include "tosh/parser/query.hpp"
 #include "tosh/parser/token/root.hpp"
 
 #include <filesystem>
 #include <istream>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -51,25 +53,20 @@ detect_command(std::string_view command)
   return std::nullopt;
 }
 
-void
+ParseQuery
 TokenParser::parse(std::istream& input)
 {
   std::string buffer{};
   std::getline(input, buffer);
 
-  _root.clear();
+  auto root = std::make_unique<RootToken>();
 
   for (auto& c : buffer) {
-    _root.parse_next(c);
+    root->parse_next(c);
   }
+  root->parse_end();
 
-  _root.parse_end();
-}
-
-RootToken&
-TokenParser::root()
-{
-  return _root;
+  return { std::move(root) };
 }
 
 }

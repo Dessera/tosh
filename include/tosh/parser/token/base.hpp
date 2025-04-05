@@ -1,6 +1,6 @@
 #pragma once
 
-#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <span>
@@ -18,6 +18,9 @@ enum class TokenType : uint8_t
   EXPR       // Normal Expression (Top level elements)
 };
 
+const char*
+token_type_to_string(TokenType type);
+
 enum class TokenState : uint8_t
 {
   CONTINUE,
@@ -28,20 +31,22 @@ enum class TokenState : uint8_t
 
 class BaseToken
 {
-public:
-  constexpr static std::array reserved_chars{ ' ', '\\', '\'', '"' };
-
 protected:
   // NOLINTNEXTLINE
   TokenType _type;
+  // NOLINTNEXTLINE
+  size_t _level;
 
 public:
-  BaseToken(TokenType type);
+  BaseToken(TokenType type, size_t level = 0);
   virtual ~BaseToken() = default;
 
   virtual TokenState parse_next(char c) = 0;
   virtual TokenState parse_end();
   [[nodiscard]] virtual std::string to_string() const = 0;
+
+  [[nodiscard]] constexpr TokenType type() const { return _type; }
+  [[nodiscard]] constexpr size_t level() const { return _level; }
 };
 
 class TreeToken : public BaseToken
@@ -53,14 +58,17 @@ protected:
   std::shared_ptr<BaseToken> _current_token{ nullptr };
 
 public:
-  TreeToken(TokenType type);
+  TreeToken(TokenType type, size_t level = 0);
   ~TreeToken() override = default;
 
   TokenState parse_next(char c) override;
   TokenState parse_end() override;
   [[nodiscard]] std::string to_string() const override;
 
-  [[nodiscard]] std::span<const std::shared_ptr<BaseToken>> tokens() const;
+  [[nodiscard]] std::span<const std::shared_ptr<BaseToken>> tokens() const
+  {
+    return _children;
+  }
 
   void clear();
   [[nodiscard]] bool is_empty() const;

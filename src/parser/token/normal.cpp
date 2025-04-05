@@ -2,16 +2,18 @@
 
 namespace tosh::parser {
 
-NormalToken::NormalToken(char init)
-  : BaseToken(TokenType::NORMAL)
+// NOLINTNEXTLINE
+NormalToken::NormalToken(char init, char quote, size_t level)
+  : BaseToken(TokenType::NORMAL, level)
   , _str{ init }
+  , _quote(quote)
 {
 }
 
 TokenState
 NormalToken::parse_next(char c)
 {
-  if (std::ranges::find(reserved_chars, c) != reserved_chars.end()) {
+  if (c == ' ' || c == '\\' || c == _quote) {
     return TokenState::END;
   }
 

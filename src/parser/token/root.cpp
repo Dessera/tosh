@@ -14,7 +14,7 @@ TokenState
 RootToken::create_new_token(char c)
 {
   if (c != ' ') {
-    _current_token = std::make_unique<ExprToken>(c);
+    _current_token = std::make_unique<ExprToken>(c, 1);
   }
 
   return TokenState::CONTINUE;

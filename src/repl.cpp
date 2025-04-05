@@ -46,16 +46,16 @@ Repl::run()
 
   while (true) {
     std::print("$ ");
-    _parser.parse(std::cin);
+    auto query = _parser.parse(std::cin);
 
     // null -> next line
-    if (_parser.root().is_empty()) {
+    if (query.root().is_empty()) {
       continue;
     }
 
     // builtin -> execute builtin
     auto args =
-      _parser.root().tokens() |
+      query.root().tokens() |
       views::transform([](auto& token) { return token->to_string(); }) |
       ranges::to<std::vector<std::string>>();
     if (has_builtin(args[0])) {

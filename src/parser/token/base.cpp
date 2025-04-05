@@ -1,11 +1,33 @@
 #include "tosh/parser/token/base.hpp"
+
+#include <cstddef>
 #include <memory>
 #include <ranges>
 
 namespace tosh::parser {
 
-BaseToken::BaseToken(TokenType type)
+const char*
+token_type_to_string(TokenType type)
+{
+  switch (type) {
+    case TokenType::ROOT:
+      return "ROOT";
+    case TokenType::NORMAL:
+      return "NORMAL";
+    case TokenType::BACKSLASH:
+      return "BACKSLASH";
+    case TokenType::QUOTE:
+      return "QUOTE";
+    case TokenType::EXPR:
+      return "EXPR";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+BaseToken::BaseToken(TokenType type, size_t level)
   : _type(type)
+  , _level(level)
 {
 }
 
@@ -15,8 +37,8 @@ BaseToken::parse_end()
   return TokenState::END;
 }
 
-TreeToken::TreeToken(TokenType type)
-  : BaseToken(type)
+TreeToken::TreeToken(TokenType type, size_t level)
+  : BaseToken(type, level)
 {
 }
 
@@ -36,9 +58,9 @@ TreeToken::parse_next(char c)
       case TokenState::ERROR:
         return TokenState::ERROR;
     }
-  } else {
-    return create_new_token(c);
   }
+
+  return create_new_token(c);
 }
 
 TokenState
@@ -58,12 +80,6 @@ TreeToken::to_string() const
            return token->to_string();
          }) |
          views::join | ranges::to<std::string>();
-}
-
-std::span<const std::shared_ptr<BaseToken>>
-TreeToken::tokens() const
-{
-  return _children;
 }
 
 void

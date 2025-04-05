@@ -1,6 +1,7 @@
 #pragma once
 
-#include "tosh/parser/token/root.hpp"
+#include "tosh/parser/query.hpp"
+
 #include <istream>
 #include <optional>
 #include <string_view>
@@ -12,13 +13,8 @@ detect_command(std::string_view command);
 
 class TokenParser
 {
-private:
-  RootToken _root;
-
 public:
-  void parse(std::istream& input);
-
-  [[nodiscard]] RootToken& root();
+  ParseQuery parse(std::istream& input);
 };
 
 }
