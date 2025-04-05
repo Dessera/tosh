@@ -9,6 +9,12 @@ BaseToken::BaseToken(TokenType type)
 {
 }
 
+TokenState
+BaseToken::parse_end()
+{
+  return TokenState::END;
+}
+
 TreeToken::TreeToken(TokenType type)
   : BaseToken(type)
 {
@@ -33,6 +39,13 @@ TreeToken::parse_next(char c)
   } else {
     return create_new_token(c);
   }
+}
+
+TokenState
+TreeToken::parse_end()
+{
+  submit_current_token();
+  return TokenState::END;
 }
 
 std::string
@@ -70,6 +83,7 @@ void
 TreeToken::submit_current_token()
 {
   if (_current_token) {
+    _current_token->parse_end();
     _children.push_back(std::move(_current_token));
     _current_token = nullptr;
   }

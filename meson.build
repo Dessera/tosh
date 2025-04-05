@@ -21,6 +21,7 @@ lib_src = files(
   'src/parser.cpp',
   'src/parser/token/backslash.cpp',
   'src/parser/token/base.cpp',
+  'src/parser/token/expr.cpp',
   'src/parser/token/normal.cpp',
   'src/parser/token/quote.cpp',
   'src/parser/token/root.cpp',

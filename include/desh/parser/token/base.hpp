@@ -11,10 +11,11 @@ namespace desh::parser {
 
 enum class TokenType : uint8_t
 {
-  ROOT,
-  NORMAL,
-  BACKSLASH,
-  QUOTE
+  ROOT,      // Token Tree Root
+  NORMAL,    // Normal Text
+  BACKSLASH, // Backslash Escape
+  QUOTE,     // Any Quote
+  EXPR       // Normal Expression (Top level elements)
 };
 
 enum class TokenState : uint8_t
@@ -39,6 +40,7 @@ public:
   virtual ~BaseToken() = default;
 
   virtual TokenState parse_next(char c) = 0;
+  virtual TokenState parse_end();
   [[nodiscard]] virtual std::string to_string() const = 0;
 };
 
@@ -55,6 +57,7 @@ public:
   ~TreeToken() override = default;
 
   TokenState parse_next(char c) override;
+  TokenState parse_end() override;
   [[nodiscard]] std::string to_string() const override;
 
   [[nodiscard]] std::span<const std::shared_ptr<BaseToken>> tokens() const;

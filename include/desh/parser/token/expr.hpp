@@ -4,10 +4,10 @@
 
 namespace desh::parser {
 
-class RootToken : public TreeToken
+class ExprToken : public TreeToken
 {
 public:
-  RootToken();
+  ExprToken(char init);
 
 private:
   TokenState create_new_token(char c) override;
