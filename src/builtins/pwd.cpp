@@ -1,13 +1,13 @@
 
-#include "desh/builtins/pwd.hpp"
-#include "desh/repl.hpp"
+#include "tosh/builtins/pwd.hpp"
+#include "tosh/repl.hpp"
 
 #include <cstdlib>
 #include <filesystem>
 #include <print>
 #include <unistd.h>
 
-namespace desh::builtins {
+namespace tosh::builtins {
 
 int
 Pwd::execute(repl::Repl& /*repl*/, std::span<const std::string> /*args*/)

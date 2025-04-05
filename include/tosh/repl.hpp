@@ -1,13 +1,13 @@
 #pragma once
 
-#include "desh/builtins/base.hpp"
-#include "desh/parser.hpp"
+#include "tosh/builtins/base.hpp"
+#include "tosh/parser.hpp"
 
 #include <map>
 #include <memory>
 #include <string>
 
-namespace desh::repl {
+namespace tosh::repl {
 
 class Repl
 {

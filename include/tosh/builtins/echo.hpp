@@ -1,10 +1,10 @@
 #pragma once
 
-#include "desh/builtins/base.hpp"
+#include "tosh/builtins/base.hpp"
 
-namespace desh::builtins {
+namespace tosh::builtins {
 
-class Exec : public BaseCommand
+class Echo : public BaseCommand
 {
 public:
   int execute(repl::Repl& repl, std::span<const std::string> args) override;

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "desh/builtins/base.hpp"
+#include "tosh/builtins/base.hpp"
 
-namespace desh::builtins {
+namespace tosh::builtins {
 
 class Cd : public BaseCommand
 {

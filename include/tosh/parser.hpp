@@ -1,11 +1,11 @@
 #pragma once
 
-#include "desh/parser/token/root.hpp"
+#include "tosh/parser/token/root.hpp"
 #include <istream>
 #include <optional>
 #include <string_view>
 
-namespace desh::parser {
+namespace tosh::parser {
 
 std::optional<std::string>
 detect_command(std::string_view command);

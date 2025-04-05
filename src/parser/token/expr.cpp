@@ -1,10 +1,10 @@
-#include "desh/parser/token/expr.hpp"
-#include "desh/parser/token/backslash.hpp"
-#include "desh/parser/token/base.hpp"
-#include "desh/parser/token/normal.hpp"
-#include "desh/parser/token/quote.hpp"
+#include "tosh/parser/token/expr.hpp"
+#include "tosh/parser/token/backslash.hpp"
+#include "tosh/parser/token/base.hpp"
+#include "tosh/parser/token/normal.hpp"
+#include "tosh/parser/token/quote.hpp"
 
-namespace desh::parser {
+namespace tosh::parser {
 
 ExprToken::ExprToken(char init)
   : TreeToken(TokenType::EXPR)

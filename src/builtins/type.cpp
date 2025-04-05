@@ -1,12 +1,12 @@
 
-#include "desh/builtins/type.hpp"
-#include "desh/parser.hpp"
-#include "desh/repl.hpp"
+#include "tosh/builtins/type.hpp"
+#include "tosh/parser.hpp"
+#include "tosh/repl.hpp"
 
 #include <cstdlib>
 #include <print>
 
-namespace desh::builtins {
+namespace tosh::builtins {
 
 int
 Type::execute(repl::Repl& repl, std::span<const std::string> args)

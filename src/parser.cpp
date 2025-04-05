@@ -1,5 +1,5 @@
-#include "desh/parser.hpp"
-#include "desh/parser/token/root.hpp"
+#include "tosh/parser.hpp"
+#include "tosh/parser/token/root.hpp"
 
 #include <filesystem>
 #include <istream>
@@ -27,7 +27,7 @@ split_string(std::string_view str, char delimiter)
 
 }
 
-namespace desh::parser {
+namespace tosh::parser {
 
 std::optional<std::string>
 detect_command(std::string_view command)

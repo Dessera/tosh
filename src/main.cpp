@@ -1,9 +1,9 @@
-#include <desh/repl.hpp>
 #include <print>
+#include <tosh/repl.hpp>
 
 int
 main()
 {
-  using desh::repl::Repl;
+  using tosh::repl::Repl;
   Repl().run();
 }

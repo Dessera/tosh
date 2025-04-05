@@ -1,13 +1,13 @@
-#include "desh/repl.hpp"
-#include "desh/builtins/base.hpp"
-#include "desh/builtins/cd.hpp"
-#include "desh/builtins/check_args.hpp"
-#include "desh/builtins/echo.hpp"
-#include "desh/builtins/exec.hpp"
-#include "desh/builtins/exit.hpp"
-#include "desh/builtins/pwd.hpp"
-#include "desh/builtins/type.hpp"
-#include "desh/parser.hpp"
+#include "tosh/repl.hpp"
+#include "tosh/builtins/base.hpp"
+#include "tosh/builtins/cd.hpp"
+#include "tosh/builtins/check_args.hpp"
+#include "tosh/builtins/echo.hpp"
+#include "tosh/builtins/exec.hpp"
+#include "tosh/builtins/exit.hpp"
+#include "tosh/builtins/pwd.hpp"
+#include "tosh/builtins/type.hpp"
+#include "tosh/parser.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -19,7 +19,7 @@
 #include <string>
 #include <sys/wait.h>
 
-namespace desh::repl {
+namespace tosh::repl {
 
 Repl::Repl()
   : _builtins(

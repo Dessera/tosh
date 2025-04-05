@@ -1,8 +1,8 @@
-#include "desh/parser/token/base.hpp"
+#include "tosh/parser/token/base.hpp"
 #include <memory>
 #include <ranges>
 
-namespace desh::parser {
+namespace tosh::parser {
 
 BaseToken::BaseToken(TokenType type)
   : _type(type)

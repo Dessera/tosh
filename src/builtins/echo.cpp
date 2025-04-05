@@ -1,11 +1,11 @@
 
-#include "desh/builtins/echo.hpp"
+#include "tosh/builtins/echo.hpp"
 
 #include <cstdlib>
 #include <iostream>
 #include <print>
 
-namespace desh::builtins {
+namespace tosh::builtins {
 
 int
 Echo::execute(repl::Repl& /*repl*/, std::span<const std::string> args)

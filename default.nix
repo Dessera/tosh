@@ -8,7 +8,7 @@
   pkg-config,
 }:
 stdenv.mkDerivation {
-  name = "desh";
+  name = "tosh";
   src = lib.cleanSource ./.;
 
   nativeBuildInputs = [

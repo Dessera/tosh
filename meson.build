@@ -1,5 +1,5 @@
 project(
-  'desh',
+  'tosh',
   'cpp',
   version: '0.1.0',
   default_options: ['warning_level=3', 'cpp_std=gnu++26'],
@@ -17,7 +17,7 @@ lib_src = files(
   'src/builtins/exit.cpp',
   'src/builtins/pwd.cpp',
   'src/builtins/type.cpp',
-  'src/desh.cpp',
+  'src/tosh.cpp',
   'src/parser.cpp',
   'src/parser/token/backslash.cpp',
   'src/parser/token/base.cpp',
@@ -29,37 +29,37 @@ lib_src = files(
 )
 lib_inc = include_directories('include')
 
-install_subdir('include/desh', install_dir: 'include')
+install_subdir('include/tosh', install_dir: 'include')
 
 shlib = shared_library(
-  'desh',
+  'tosh',
   lib_src,
   include_directories: lib_inc,
   install: true,
 )
 
-dep_desh_shared = declare_dependency(include_directories: lib_inc, link_with: shlib)
+dep_tosh_shared = declare_dependency(include_directories: lib_inc, link_with: shlib)
 
 inc = include_directories('include')
 src = files('src/main.cpp')
-deps = [dep_desh_shared]
+deps = [dep_tosh_shared]
 
 exe = executable(
-  'desh',
+  'tosh',
   src,
   include_directories: inc,
   dependencies: deps,
   install: true,
 )
 
-test('desh', exe)
+test('tosh', exe)
 
 libs = [shlib]
 
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(
-  name: 'desh',
-  filebase: 'desh',
+  name: 'tosh',
+  filebase: 'tosh',
   description: 'A toy shell',
   libraries: libs,
   version: '0.1.0',

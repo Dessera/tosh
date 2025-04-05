@@ -1,9 +1,9 @@
 
-#include "desh/builtins/exit.hpp"
+#include "tosh/builtins/exit.hpp"
 
 #include <cstdlib>
 
-namespace desh::builtins {
+namespace tosh::builtins {
 
 int
 Exit::execute(repl::Repl& /*repl*/, std::span<const std::string> args)

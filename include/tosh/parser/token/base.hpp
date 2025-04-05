@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace desh::parser {
+namespace tosh::parser {
 
 enum class TokenType : uint8_t
 {

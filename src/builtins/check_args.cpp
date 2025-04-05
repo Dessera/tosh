@@ -1,10 +1,10 @@
 
-#include "desh/builtins/check_args.hpp"
+#include "tosh/builtins/check_args.hpp"
 
 #include <cstdlib>
 #include <print>
 
-namespace desh::builtins {
+namespace tosh::builtins {
 
 int
 CheckArgs::execute(repl::Repl& /*repl*/, std::span<const std::string> args)

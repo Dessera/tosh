@@ -1,6 +1,6 @@
-#include "desh/parser/token/backslash.hpp"
+#include "tosh/parser/token/backslash.hpp"
 
-namespace desh::parser {
+namespace tosh::parser {
 
 BackslashToken::BackslashToken(char quote)
   : BaseToken(TokenType::BACKSLASH)

@@ -1,7 +1,7 @@
 
-#include "desh/builtins/exec.hpp"
-#include "desh/parser.hpp"
-#include "desh/repl.hpp"
+#include "tosh/builtins/exec.hpp"
+#include "tosh/parser.hpp"
+#include "tosh/repl.hpp"
 
 #include <cstdlib>
 #include <cstring>
@@ -23,7 +23,7 @@ to_cstr(const std::string& str)
 
 }
 
-namespace desh::builtins {
+namespace tosh::builtins {
 
 int
 Exec::execute(repl::Repl& /*repl*/, std::span<const std::string> args)

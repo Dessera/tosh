@@ -1,8 +1,8 @@
 #pragma once
 
-#include "desh/parser/token/base.hpp"
+#include "tosh/parser/token/base.hpp"
 
-namespace desh::parser {
+namespace tosh::parser {
 
 class NormalToken : public BaseToken
 {

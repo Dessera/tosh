@@ -1,6 +1,6 @@
-#include "desh/parser/token/normal.hpp"
+#include "tosh/parser/token/normal.hpp"
 
-namespace desh::parser {
+namespace tosh::parser {
 
 NormalToken::NormalToken(char init)
   : BaseToken(TokenType::NORMAL)

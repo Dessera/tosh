@@ -1,6 +1,6 @@
 
-#include "desh/builtins/cd.hpp"
-#include "desh/repl.hpp"
+#include "tosh/builtins/cd.hpp"
+#include "tosh/repl.hpp"
 
 #include <cstdlib>
 #include <filesystem>
@@ -21,7 +21,7 @@ get_home_directory()
 
 }
 
-namespace desh::builtins {
+namespace tosh::builtins {
 
 int
 Cd::execute(repl::Repl& /*repl*/, std::span<const std::string> args)

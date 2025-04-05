@@ -3,13 +3,13 @@
 #include <span>
 #include <string>
 
-namespace desh::repl {
+namespace tosh::repl {
 
 class Repl;
 
 }
 
-namespace desh::builtins {
+namespace tosh::builtins {
 
 class BaseCommand
 {

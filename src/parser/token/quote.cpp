@@ -1,8 +1,8 @@
-#include "desh/parser/token/quote.hpp"
-#include "desh/parser/token/backslash.hpp"
-#include "desh/parser/token/normal.hpp"
+#include "tosh/parser/token/quote.hpp"
+#include "tosh/parser/token/backslash.hpp"
+#include "tosh/parser/token/normal.hpp"
 
-namespace desh::parser {
+namespace tosh::parser {
 
 QuoteToken::QuoteToken(char quote)
   : TreeToken(TokenType::QUOTE)
