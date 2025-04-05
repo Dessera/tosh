@@ -1,6 +1,8 @@
 #include "desh/parser.hpp"
+#include "desh/parser/token/root.hpp"
 
 #include <filesystem>
+#include <istream>
 #include <optional>
 #include <string>
 #include <vector>
@@ -49,92 +51,25 @@ detect_command(std::string_view command)
   return std::nullopt;
 }
 
-TokenBuffer
-TokenBuffer::parse(std::string_view raw)
+void
+TokenParser::parse(std::istream& input)
 {
-  // TokenBuffer buffer;
-  std::vector<std::string> tokens{};
-  std::string token_buffer{};
+  std::string buffer{};
+  std::getline(input, buffer);
 
-  char stop_quote = '\0';
-  bool in_quotes = false;
+  _root.clear();
 
-  tokens.emplace_back(""); // placeholder for the builtin
-
-  std::string_view::iterator start = raw.begin();
-  std::string_view::iterator it = raw.begin();
-  // NOLINTNEXTLINE
-  while (it != raw.end()) {
-    if (*it == ' ') {
-      if (!in_quotes) {
-        if (start != it) {
-          // tokens.emplace_back(start, it);
-          tokens.push_back(token_buffer);
-          token_buffer.clear();
-        }
-        // NOLINTNEXTLINE
-        start = it + 1;
-      } else {
-        token_buffer += *it;
-      }
-    } else if (*it == '"' || *it == '\'') {
-      if (in_quotes && stop_quote == *it) {
-        in_quotes = false;
-      } else {
-        in_quotes = true;
-        stop_quote = *it;
-      }
-    } else if (*it == '\\') {
-      if (it + 1 != raw.end()) {
-        if (in_quotes) {
-          if (*(it + 1) == '\\' || *(it + 1) == stop_quote) {
-            token_buffer += *(it + 1);
-          } else {
-            token_buffer += *it;
-            token_buffer += *(it + 1);
-          }
-        } else {
-          token_buffer += *(it + 1);
-        }
-        ++it;
-      }
-    } else {
-      token_buffer += *it;
-    }
-
-    ++it;
+  for (auto& c : buffer) {
+    _root.parse_next(c);
   }
 
-  if (start != raw.end()) {
-    tokens.push_back(token_buffer);
-  }
-
-  return TokenBuffer{ std::move(tokens) };
+  _root.parse_end();
 }
 
-TokenBuffer::TokenBuffer(std::vector<std::string> tokens)
-  : _tokens{ std::move(tokens) }
+RootToken&
+TokenParser::root()
 {
-}
-
-std::span<const std::string>
-TokenBuffer::args() const
-{
-  return std::span(_tokens).subspan(1);
-}
-
-bool
-TokenBuffer::is_empty() const
-{
-  return _tokens.size() == 1;
-}
-
-std::span<const std::string>
-TokenBuffer::args_with_prefix(const std::string& prefix)
-{
-  // nobody can touch this except through this function
-  _tokens.front() = prefix;
-  return _tokens;
+  return _root;
 }
 
 }

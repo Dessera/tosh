@@ -19,6 +19,11 @@ lib_src = files(
   'src/builtins/type.cpp',
   'src/desh.cpp',
   'src/parser.cpp',
+  'src/parser/token/backslash.cpp',
+  'src/parser/token/base.cpp',
+  'src/parser/token/normal.cpp',
+  'src/parser/token/quote.cpp',
+  'src/parser/token/root.cpp',
   'src/repl.cpp',
 )
 lib_inc = include_directories('include')

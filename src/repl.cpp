@@ -15,6 +15,7 @@
 #include <iostream>
 #include <memory>
 #include <print>
+#include <ranges>
 #include <string>
 #include <sys/wait.h>
 
@@ -40,26 +41,30 @@ Repl::Repl()
 void
 Repl::run()
 {
+  namespace views = std::ranges::views;
+  namespace ranges = std::ranges;
+
   while (true) {
     std::print("$ ");
-    std::getline(std::cin, _buffer);
-
-    _parser = parser::TokenBuffer::parse(_buffer);
+    _parser.parse(std::cin);
 
     // null -> next line
-    if (_parser.is_empty()) {
+    if (_parser.root().is_empty()) {
       continue;
     }
 
     // builtin -> execute builtin
-    auto args = _parser.args();
+    auto args =
+      _parser.root().tokens() |
+      views::transform([](auto& token) { return token->to_string(); }) |
+      ranges::to<std::vector<std::string>>();
     if (has_builtin(args[0])) {
       execute_builtin(args[0], args);
       continue;
     }
 
     // not builtin -> exec builtin
-    execute_builtin("exec", _parser.args_with_prefix("exec"));
+    // execute_builtin("exec", _parser.args_with_prefix("exec"));
   }
 }
 

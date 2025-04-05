@@ -15,7 +15,7 @@ private:
   std::map<std::string, std::shared_ptr<builtins::BaseCommand>> _builtins;
 
   std::string _buffer;
-  parser::TokenBuffer _parser;
+  parser::TokenParser _parser{};
 
 public:
   Repl();
