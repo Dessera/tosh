@@ -64,7 +64,8 @@ Repl::run()
     }
 
     // not builtin -> exec builtin
-    // execute_builtin("exec", _parser.args_with_prefix("exec"));
+    args.insert(args.begin(), "exec");
+    execute_builtin("exec", args);
   }
 }
 
