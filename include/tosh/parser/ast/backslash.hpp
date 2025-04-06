@@ -1,7 +1,7 @@
-#include "tosh/parser/token/base.hpp"
+#include "tosh/parser/ast/base.hpp"
 #include <cstddef>
 
-namespace tosh::parser {
+namespace tosh::ast {
 
 class BackslashToken : public BaseToken
 {
@@ -12,7 +12,7 @@ private:
 public:
   BackslashToken(char quote = '\0', size_t level = 0);
 
-  TokenState parse_next(char c) override;
+  ParseState handle_char(char c) override;
   [[nodiscard]] std::string to_string() const override;
 };
 

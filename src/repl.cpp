@@ -7,7 +7,7 @@
 #include "tosh/builtins/exit.hpp"
 #include "tosh/builtins/pwd.hpp"
 #include "tosh/builtins/type.hpp"
-#include "tosh/parser.hpp"
+#include "tosh/parser/parser.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -17,7 +17,6 @@
 #include <print>
 #include <ranges>
 #include <string>
-#include <sys/wait.h>
 
 namespace tosh::repl {
 
@@ -46,16 +45,16 @@ Repl::run()
 
   while (true) {
     std::print("$ ");
-    auto query = _parser.parse(std::cin);
+    _query = _parser.parse(std::cin);
 
     // null -> next line
-    if (query.root().is_empty()) {
+    if (_query.ast().is_empty()) {
       continue;
     }
 
     // builtin -> execute builtin
     auto args =
-      query.root().tokens() |
+      _query.ast().tokens() |
       views::transform([](auto& token) { return token->to_string(); }) |
       ranges::to<std::vector<std::string>>();
     if (has_builtin(args[0])) {

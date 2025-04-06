@@ -1,7 +1,8 @@
-#include "tosh/parser/token/backslash.hpp"
+#include "tosh/parser/ast/backslash.hpp"
+#include "tosh/parser/ast/base.hpp"
 #include <cstddef>
 
-namespace tosh::parser {
+namespace tosh::ast {
 
 // NOLINTNEXTLINE
 BackslashToken::BackslashToken(char quote, size_t level)
@@ -10,8 +11,8 @@ BackslashToken::BackslashToken(char quote, size_t level)
 {
 }
 
-TokenState
-BackslashToken::parse_next(char c)
+ParseState
+BackslashToken::handle_char(char c)
 {
   if (_quote != '\0') {
     if (c == _quote || c == '\\') {
@@ -23,7 +24,7 @@ BackslashToken::parse_next(char c)
     _str = c;
   }
 
-  return TokenState::END_PASS;
+  return ParseState::END_PASS;
 }
 
 std::string

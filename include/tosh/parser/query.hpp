@@ -1,8 +1,9 @@
 #pragma once
 
-#include "tosh/parser/token/root.hpp"
+#include "tosh/parser/ast/root.hpp"
 
 #include <memory>
+#include <vector>
 
 namespace tosh::parser {
 
@@ -12,12 +13,13 @@ namespace tosh::parser {
 class ParseQuery
 {
 private:
-  std::unique_ptr<RootToken> _root;
+  std::shared_ptr<ast::RootToken> _root{ nullptr };
 
 public:
-  ParseQuery(std::unique_ptr<RootToken> root);
+  ParseQuery() = default;
+  ParseQuery(std::shared_ptr<ast::RootToken> root);
 
-  RootToken& root() { return *_root; }
+  [[nodiscard]] const ast::RootToken& ast() const { return *_root; }
 };
 
 }

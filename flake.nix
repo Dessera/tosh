@@ -53,6 +53,7 @@
                 }
                 {
                   inputsFrom = [ self'.packages.default ];
+                  hardeningDisable = [ "fortify" ];
 
                   packages =
                     (with pkgs; [

@@ -1,6 +1,6 @@
 
 #include "tosh/builtins/type.hpp"
-#include "tosh/parser.hpp"
+#include "tosh/parser/parser.hpp"
 #include "tosh/repl.hpp"
 
 #include <cstdlib>
