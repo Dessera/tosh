@@ -5,9 +5,8 @@ project(
   default_options: ['warning_level=3', 'cpp_std=gnu++26'],
 )
 
-if get_option('buildtype') == 'debug'
-  # add_project_arguments('-D_FORTIFY_SOURCE=0', language: 'cpp')
-endif
+libmagic_enum_proj = subproject('magic_enum')
+libmagic_enum_dep = libmagic_enum_proj.get_variable('magic_enum_dep')
 
 lib_src = files(
   'src/builtins/cd.cpp',
@@ -21,7 +20,7 @@ lib_src = files(
   'src/parser/ast/base.cpp',
   'src/parser/ast/expr.cpp',
   'src/parser/ast/quote.cpp',
-  # 'src/parser/ast/redirect.cpp',
+  'src/parser/ast/redirect.cpp',
   'src/parser/ast/root.cpp',
   'src/parser/ast/text.cpp',
   'src/parser/parser.cpp',
@@ -35,6 +34,7 @@ install_subdir('include/tosh', install_dir: 'include')
 shlib = shared_library(
   'tosh',
   lib_src,
+  dependencies: [libmagic_enum_dep],
   include_directories: lib_inc,
   install: true,
 )
@@ -43,7 +43,7 @@ dep_tosh_shared = declare_dependency(include_directories: lib_inc, link_with: sh
 
 inc = include_directories('include')
 src = files('src/main.cpp')
-deps = [dep_tosh_shared]
+deps = [dep_tosh_shared, libmagic_enum_dep]
 
 exe = executable(
   'tosh',

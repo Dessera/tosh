@@ -10,8 +10,16 @@ TextToken::TextToken(char quote, size_t level)
 {
 }
 
+// NOLINTNEXTLINE
+TextToken::TextToken(std::string str, char quote, size_t level)
+  : BaseToken(TokenType::TEXT, level)
+  , _str(std::move(str))
+  , _quote(quote)
+{
+}
+
 ParseState
-TextToken::handle_char(char c)
+TextToken::on_continue(char c)
 {
   if (c == '\\' || (_quote != '\0' && c == _quote) ||
       (_quote == '\0' && (c == '\'' || c == '"' || c == ' '))) {
@@ -24,7 +32,7 @@ TextToken::handle_char(char c)
 }
 
 std::string
-TextToken::to_string() const
+TextToken::string() const
 {
   return _str;
 }

@@ -4,18 +4,7 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <format>
 #include <memory>
-
-namespace {
-
-constexpr bool
-is_num(char c)
-{
-  return c >= '0' && c <= '9';
-}
-
-}
 
 namespace tosh::ast {
 
@@ -26,9 +15,9 @@ RedirectSrcToken::RedirectSrcToken(size_t level)
 }
 
 ParseState
-RedirectSrcToken::handle_char(char c)
+RedirectSrcToken::on_continue(char c)
 {
-  if (is_num(c)) {
+  if (validate(c)) {
     _src += c;
     return ParseState::CONTINUE;
   }
@@ -37,7 +26,7 @@ RedirectSrcToken::handle_char(char c)
 }
 
 std::string
-RedirectSrcToken::to_string() const
+RedirectSrcToken::string() const
 {
   return _src;
 }
@@ -49,7 +38,7 @@ RedirectOpToken::RedirectOpToken(size_t level)
 }
 
 ParseState
-RedirectOpToken::handle_char(char c)
+RedirectOpToken::on_continue(char c)
 {
   if (std::ranges::find(VALID_OPCS, c) != VALID_OPCS.end()) {
     _op += c;
@@ -64,9 +53,15 @@ RedirectOpToken::handle_char(char c)
 }
 
 std::string
-RedirectOpToken::to_string() const
+RedirectOpToken::string() const
 {
   return _op;
+}
+
+RedirectDestToken::RedirectDestToken(size_t level)
+  : TextToken('\0', level)
+{
+  type(TokenType::REDIRECT_DEST);
 }
 
 // NOLINTNEXTLINE
@@ -76,35 +71,35 @@ RedirectToken::RedirectToken(size_t level)
 }
 
 ParseState
-RedirectToken::handle_char(char c)
+RedirectToken::on_continue(char c)
 {
   if (_op == nullptr) {
-    if (is_num(c)) {
+    if (RedirectSrcToken::validate(c) && _src == nullptr) {
       _src = std::make_shared<RedirectSrcToken>(level() + 1);
-      set_current_token(_src);
+      current(_src);
       return ParseState::REPEAT;
     }
-    if (std::ranges::find(RedirectOpToken::VALID_OPCS, c) !=
-        RedirectOpToken::VALID_OPCS.end()) {
+
+    if (RedirectOpToken::validate(c)) {
       _op = std::make_shared<RedirectOpToken>(level() + 1);
-      set_current_token(_op);
+      current(_op);
       return ParseState::REPEAT;
     }
+
+    return ParseState::INVALID;
   }
 
   if (_dest == nullptr) {
-    _dest = std::make_shared<TextToken>('\0', level() + 1);
-    set_current_token(_dest);
+    if (c == ' ') {
+      return ParseState::CONTINUE;
+    }
+
+    _dest = std::make_shared<RedirectDestToken>(level() + 1);
+    current(_dest);
     return ParseState::REPEAT;
   }
 
   return ParseState::END;
-}
-
-ParseState
-RedirectToken::handle_invalid()
-{
-  return ParseState::INVALID;
 }
 
 }

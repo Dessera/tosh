@@ -1,32 +1,30 @@
 #pragma once
 
+#include "tosh/utils/node.hpp"
+
+#include <magic_enum/magic_enum.hpp>
+
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <format>
-#include <memory>
 #include <ranges>
-#include <span>
 #include <string>
-#include <vector>
 
 namespace tosh::ast {
 
 enum class TokenType : uint8_t
 {
-  ROOT,         // Token Tree Root
-  TEXT,         // Normal Text
-  BACKSLASH,    // Backslash Escape
-  QUOTE,        // Any Quote
-  REDIRECT,     // Redirect
-  REDIRECT_SRC, // Redirect Source
-  REDIRECT_OP,  // Redirect Operator
-  REDIRECT_DST, // Redirect Destination
-  EXPR          // Normal Expression (Top level elements)
+  ROOT,          // Token Tree Root
+  TEXT,          // Normal Text
+  BACKSLASH,     // Backslash Escape
+  QUOTE,         // Any Quote
+  REDIRECT,      // Redirect
+  REDIRECT_SRC,  // Redirect Source
+  REDIRECT_OP,   // Redirect Operator
+  REDIRECT_DEST, // Redirect Destination
+  EXPR           // Normal Expression (Top level elements)
 };
-
-const char*
-token_type_to_string(TokenType type);
 
 enum class ParseState : uint8_t
 {
@@ -38,42 +36,29 @@ enum class ParseState : uint8_t
 };
 
 class BaseToken
+  : public utils::INode<BaseToken>
+  , public utils::ICursor<BaseToken>
 {
 protected:
   // NOLINTNEXTLINE
   TokenType _type;
   // NOLINTNEXTLINE
   size_t _level;
-  // NOLINTNEXTLINE
-  std::vector<std::shared_ptr<BaseToken>> _tokens;
-  // NOLINTNEXTLINE
-  std::shared_ptr<BaseToken> _current_token{ nullptr };
 
 public:
   BaseToken(TokenType type, size_t level = 0);
   virtual ~BaseToken() = default;
 
-  virtual ParseState handle_char(char c) = 0;
-  virtual ParseState handle_invalid();
-  [[nodiscard]] virtual std::string to_string() const;
+  [[nodiscard]] virtual std::string string() const;
+  virtual ParseState on_invalid(char c);
+  virtual ParseState on_end();
+  virtual ParseState on_continue(char c) = 0;
 
   [[nodiscard]] constexpr TokenType type() const { return _type; }
+  constexpr void type(TokenType type) { _type = type; }
   [[nodiscard]] constexpr size_t level() const { return _level; }
 
-  [[nodiscard]] constexpr std::span<const std::shared_ptr<BaseToken>> tokens()
-    const
-  {
-    return _tokens;
-  }
-
-  [[nodiscard]] constexpr bool is_empty() const { return _tokens.empty(); }
-
-  ParseState parse_next(char c);
-  ParseState parse_end();
-
-protected:
-  void push_current();
-  void set_current(std::shared_ptr<BaseToken> token);
+  ParseState iter_next(char c);
 };
 
 }
@@ -88,15 +73,15 @@ struct std::formatter<Derived, CharT>
     namespace views = std::ranges::views;
     namespace ranges = std::ranges;
 
-    if (token.is_empty()) {
+    if (token.empty()) {
       return std::format_to(ctx.out(),
                             "{}{}: {}",
                             std::string(token.level() * 2, ' '),
-                            token_type_to_string(token.type()),
-                            token.to_string());
+                            magic_enum::enum_name(token.type()),
+                            token.string());
     }
 
-    auto children = token.tokens() | views::transform([](const auto& token) {
+    auto children = token.nodes() | views::transform([](const auto& token) {
                       return std::format("{}", *token);
                     }) |
                     views::join_with('\n') | ranges::to<std::string>();
@@ -104,7 +89,7 @@ struct std::formatter<Derived, CharT>
     return std::format_to(ctx.out(),
                           "{}{}: \n{}",
                           std::string(token.level() * 2, ' '),
-                          token_type_to_string(token.type()),
+                          magic_enum::enum_name(token.type()),
                           children);
   }
 };

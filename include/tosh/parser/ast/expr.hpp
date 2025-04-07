@@ -11,8 +11,9 @@ public:
   ExprToken(size_t level = 0);
 
 private:
-  ParseState handle_char(char c) override;
-  // ParseState handle_invalid() override;
+  ParseState on_continue(char c) override;
+  ParseState on_invalid(char c) override;
+  ParseState on_end() override;
 };
 
 }

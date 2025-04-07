@@ -1,5 +1,4 @@
 #include "tosh/parser/parser.hpp"
-#include "tosh/parser/ast/base.hpp"
 #include "tosh/parser/ast/root.hpp"
 #include "tosh/parser/query.hpp"
 
@@ -53,9 +52,9 @@ TokenParser::parse(std::istream& input)
   std::getline(input, buffer);
 
   for (auto& c : buffer) {
-    root->parse_next(c);
+    root->iter_next(c);
   }
-  root->parse_end();
+  root->iter_next('\0');
 
   return { root };
 }

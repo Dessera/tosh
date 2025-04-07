@@ -1,5 +1,4 @@
 #include "tosh/parser/ast/root.hpp"
-#include "tosh/parser/ast/backslash.hpp"
 #include "tosh/parser/ast/base.hpp"
 #include "tosh/parser/ast/expr.hpp"
 
@@ -11,10 +10,10 @@ RootToken::RootToken()
 }
 
 ParseState
-RootToken::handle_char(char c)
+RootToken::on_continue(char c)
 {
   if (c != ' ') {
-    set_current(std::make_shared<ExprToken>(level() + 1));
+    current(std::make_shared<ExprToken>(level() + 1));
     return ParseState::REPEAT;
   }
 

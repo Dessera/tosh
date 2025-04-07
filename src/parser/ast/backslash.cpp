@@ -12,23 +12,34 @@ BackslashToken::BackslashToken(char quote, size_t level)
 }
 
 ParseState
-BackslashToken::handle_char(char c)
+BackslashToken::on_continue(char c)
 {
-  if (_quote != '\0') {
-    if (c == _quote || c == '\\') {
-      _str = c;
-    } else {
-      _str = { '\\', c };
-    }
-  } else {
+  if (_quote == '\0') {
     _str = c;
+    return ParseState::END_PASS;
   }
 
-  return ParseState::END_PASS;
+  if (c == _quote || c == '\\') {
+    _str = c;
+    return ParseState::END_PASS;
+  }
+
+  return ParseState::INVALID;
+  // if (_quote != '\0') {
+  //   if (c == _quote || c == '\\') {
+  //     _str = c;
+  //   } else {
+  //     _str = { '\\', c };
+  //   }
+  // } else {
+  //   _str = c;
+  // }
+
+  // return ParseState::END_PASS;
 }
 
 std::string
-BackslashToken::to_string() const
+BackslashToken::string() const
 {
   return _str;
 }

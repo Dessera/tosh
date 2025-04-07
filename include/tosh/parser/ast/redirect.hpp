@@ -14,10 +14,12 @@ private:
   std::string _src;
 
 public:
+  constexpr static bool validate(char c) { return c >= '0' && c <= '9'; }
+
   RedirectSrcToken(size_t level = 0);
 
-  ParseState handle_char(char c) override;
-  [[nodiscard]] std::string to_string() const override;
+  ParseState on_continue(char c) override;
+  [[nodiscard]] std::string string() const override;
 };
 
 class RedirectOpToken : public BaseToken
@@ -30,10 +32,18 @@ private:
   std::string _op;
 
 public:
+  constexpr static bool validate(char c) { return c == '<' || c == '>'; }
+
   RedirectOpToken(size_t level = 0);
 
-  ParseState handle_char(char c) override;
-  [[nodiscard]] std::string to_string() const override;
+  ParseState on_continue(char c) override;
+  [[nodiscard]] std::string string() const override;
+};
+
+class RedirectDestToken : public TextToken
+{
+public:
+  RedirectDestToken(size_t level = 0);
 };
 
 class RedirectToken : public BaseToken
@@ -41,13 +51,18 @@ class RedirectToken : public BaseToken
 private:
   std::shared_ptr<RedirectSrcToken> _src{ nullptr };
   std::shared_ptr<RedirectOpToken> _op{ nullptr };
-  std::shared_ptr<TextToken> _dest{ nullptr };
+  std::shared_ptr<RedirectDestToken> _dest{ nullptr };
 
 public:
+  constexpr static bool validate(char c)
+  {
+    return RedirectSrcToken::validate(c) || RedirectOpToken::validate(c);
+  }
+
   RedirectToken(size_t level = 0);
 
-  ParseState handle_char(char c) override;
-  ParseState handle_invalid() override;
+  ParseState on_continue(char c) override;
+  [[nodiscard]] constexpr bool is_complete() const { return _op && _dest; }
 };
 
 }

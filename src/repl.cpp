@@ -48,15 +48,14 @@ Repl::run()
     _query = _parser.parse(std::cin);
 
     // null -> next line
-    if (_query.ast().is_empty()) {
+    if (_query.ast().empty()) {
       continue;
     }
 
     // builtin -> execute builtin
-    auto args =
-      _query.ast().tokens() |
-      views::transform([](auto& token) { return token->to_string(); }) |
-      ranges::to<std::vector<std::string>>();
+    auto args = _query.ast().nodes() |
+                views::transform([](auto& token) { return token->string(); }) |
+                ranges::to<std::vector<std::string>>();
     if (has_builtin(args[0])) {
       execute_builtin(args[0], args);
       continue;

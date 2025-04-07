@@ -10,7 +10,7 @@ public:
   RootToken();
 
 private:
-  ParseState handle_char(char c) override;
+  ParseState on_continue(char c) override;
 };
 
 }
