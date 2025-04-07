@@ -14,7 +14,7 @@ ParseState
 RootToken::handle_char(char c)
 {
   if (c != ' ') {
-    set_current_token(std::make_shared<ExprToken>(level() + 1));
+    set_current(std::make_shared<ExprToken>(level() + 1));
     return ParseState::REPEAT;
   }
 

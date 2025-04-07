@@ -53,8 +53,7 @@ TokenParser::parse(std::istream& input)
   std::getline(input, buffer);
 
   for (auto& c : buffer) {
-    while (root->parse_next(c) == ast::ParseState::REPEAT) {
-    }
+    root->parse_next(c);
   }
   root->parse_end();
 

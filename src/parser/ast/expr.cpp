@@ -21,16 +21,16 @@ ExprToken::handle_char(char c)
   }
 
   if (c == '"' || c == '\'') {
-    set_current_token(std::make_shared<QuoteToken>(c, level() + 1));
+    set_current(std::make_shared<QuoteToken>(c, level() + 1));
     return ParseState::CONTINUE;
   }
 
   if (c == '\\') {
-    set_current_token(std::make_shared<BackslashToken>('\0', level() + 1));
+    set_current(std::make_shared<BackslashToken>('\0', level() + 1));
     return ParseState::CONTINUE;
   }
 
-  set_current_token(std::make_shared<TextToken>('\0', level() + 1));
+  set_current(std::make_shared<TextToken>('\0', level() + 1));
   return ParseState::REPEAT;
 }
 

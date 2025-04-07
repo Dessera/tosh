@@ -34,8 +34,7 @@ enum class ParseState : uint8_t
   END,      // End parsing (current char is not complete)
   END_PASS, // End parsing (current char is complete)
   INVALID,  // Invalid parse, need to handle
-  REPEAT,   // Repeat parsing
-  ERROR     // Error parsing
+  REPEAT    // Repeat parsing
 };
 
 class BaseToken
@@ -46,7 +45,7 @@ protected:
   // NOLINTNEXTLINE
   size_t _level;
   // NOLINTNEXTLINE
-  std::vector<std::shared_ptr<BaseToken>> _children;
+  std::vector<std::shared_ptr<BaseToken>> _tokens;
   // NOLINTNEXTLINE
   std::shared_ptr<BaseToken> _current_token{ nullptr };
 
@@ -64,17 +63,17 @@ public:
   [[nodiscard]] constexpr std::span<const std::shared_ptr<BaseToken>> tokens()
     const
   {
-    return _children;
+    return _tokens;
   }
 
-  [[nodiscard]] constexpr bool is_empty() const { return _children.empty(); }
+  [[nodiscard]] constexpr bool is_empty() const { return _tokens.empty(); }
 
   ParseState parse_next(char c);
   ParseState parse_end();
 
 protected:
-  void submit_current_token();
-  void set_current_token(std::shared_ptr<BaseToken> token);
+  void push_current();
+  void set_current(std::shared_ptr<BaseToken> token);
 };
 
 }

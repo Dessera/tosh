@@ -23,11 +23,11 @@ QuoteToken::handle_char(char c)
   }
 
   if (c == '\\') {
-    set_current_token(std::make_shared<BackslashToken>(_quote, level() + 1));
+    set_current(std::make_shared<BackslashToken>(_quote, level() + 1));
     return ParseState::CONTINUE;
   }
 
-  set_current_token(std::make_shared<TextToken>(_quote, level() + 1));
+  set_current(std::make_shared<TextToken>(_quote, level() + 1));
   return ParseState::REPEAT;
 }
 

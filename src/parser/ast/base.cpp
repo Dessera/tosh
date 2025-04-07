@@ -41,56 +41,59 @@ BaseToken::BaseToken(TokenType type, size_t level)
 }
 
 void
-BaseToken::submit_current_token()
+BaseToken::push_current()
 {
-  if (_current_token) {
+  if (_current_token != nullptr) {
     _current_token->parse_end();
-    _children.push_back(_current_token);
+    _tokens.push_back(_current_token);
     _current_token = nullptr;
   }
 }
 
 void
-BaseToken::set_current_token(std::shared_ptr<BaseToken> token)
+BaseToken::set_current(std::shared_ptr<BaseToken> token)
 {
-  _current_token = std::move(token);
+  if (_current_token == nullptr) {
+    _current_token = std::move(token);
+  }
 }
 
 ParseState
 BaseToken::handle_invalid()
 {
-  return ParseState::CONTINUE;
+  return ParseState::INVALID;
 }
 
 ParseState
 BaseToken::parse_next(char c)
 {
-  if (_current_token) {
-    switch (_current_token->parse_next(c)) {
-      case ParseState::CONTINUE:
-        return ParseState::CONTINUE;
-      case ParseState::END:
-        submit_current_token();
-        return handle_char(c);
-      case ParseState::END_PASS:
-        submit_current_token();
-        return ParseState::CONTINUE;
-      case ParseState::INVALID:
-        return handle_invalid();
-      case ParseState::REPEAT:
-        return ParseState::REPEAT;
-      case ParseState::ERROR:
-        return ParseState::ERROR;
-    }
-  }
+  auto status = ParseState::CONTINUE;
 
-  return handle_char(c);
+  // NOLINTNEXTLINE
+  do {
+    if (_current_token) {
+      status = _current_token->parse_next(c);
+      if (status == ParseState::INVALID) {
+        status = handle_invalid();
+      } else if (status == ParseState::END) {
+        push_current();
+        status = handle_char(c);
+      } else if (status == ParseState::END_PASS) {
+        push_current();
+        status = ParseState::CONTINUE;
+      }
+    } else {
+      status = handle_char(c);
+    }
+  } while (status == ParseState::REPEAT);
+
+  return status;
 }
 
 ParseState
 BaseToken::parse_end()
 {
-  submit_current_token();
+  push_current();
   return ParseState::END;
 }
 
@@ -100,7 +103,7 @@ BaseToken::to_string() const
   namespace views = std::ranges::views;
   namespace ranges = std::ranges;
 
-  return _children | views::transform([](const auto& token) {
+  return _tokens | views::transform([](const auto& token) {
            return token->to_string();
          }) |
          views::join | ranges::to<std::string>();
