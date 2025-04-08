@@ -1,7 +1,9 @@
 #include "tosh/parser/ast/base.hpp"
 
 #include <cstddef>
+#include <memory>
 #include <ranges>
+#include <vector>
 
 namespace tosh::ast {
 

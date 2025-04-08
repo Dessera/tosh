@@ -1,6 +1,8 @@
 #pragma once
 
+#include <concepts>
 #include <memory>
+#include <ranges>
 #include <span>
 #include <vector>
 
@@ -28,6 +30,25 @@ public:
   }
 
   [[nodiscard]] bool empty() const { return _nodes.empty(); }
+
+  template<std::invocable<NodePtr&> FunT>
+  std::vector<NodePtr> find_all(FunT f) const
+  {
+    namespace views = std::ranges::views;
+    namespace ranges = std::ranges;
+
+    auto subs =
+      nodes() |
+      views::transform([&f](const auto& node) { return node.find_all(f); }) |
+      views::join;
+
+    auto curr = nodes() |
+                views::filter([&f](const auto& node) { return f(node); }) |
+                ranges::to<std::vector<NodePtr>>();
+
+    curr.insert(curr.end(), subs.begin(), subs.end());
+    return curr;
+  }
 };
 
 template<typename NodeT>
