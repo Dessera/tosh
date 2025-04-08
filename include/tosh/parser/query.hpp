@@ -3,7 +3,6 @@
 #include "tosh/parser/ast/root.hpp"
 
 #include <memory>
-#include <vector>
 
 namespace tosh::parser {
 

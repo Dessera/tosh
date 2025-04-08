@@ -1,7 +1,8 @@
 #pragma once
 
 #include "tosh/parser/ast/base.hpp"
-#include "tosh/parser/ast/text.hpp"
+#include "tosh/parser/ast/expr.hpp"
+
 #include <array>
 #include <cstddef>
 #include <memory>

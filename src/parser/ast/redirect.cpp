@@ -1,6 +1,6 @@
 #include "tosh/parser/ast/redirect.hpp"
 #include "tosh/parser/ast/base.hpp"
-#include "tosh/parser/ast/text.hpp"
+#include "tosh/parser/ast/expr.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -59,7 +59,7 @@ RedirectOpToken::string() const
 }
 
 RedirectDestToken::RedirectDestToken(size_t level)
-  : TextToken('\0', level)
+  : TextToken(level)
 {
   type(TokenType::REDIRECT_DEST);
 }

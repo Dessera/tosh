@@ -1,15 +1,65 @@
 #include "tosh/parser/ast/quote.hpp"
-#include "tosh/parser/ast/backslash.hpp"
 #include "tosh/parser/ast/base.hpp"
-#include "tosh/parser/ast/text.hpp"
 
 #include <cstddef>
 #include <memory>
 
 namespace tosh::ast {
 
+QuoteBackslashToken::QuoteBackslashToken(QuoteType quote, size_t level)
+  : BaseToken(TokenType::BACKSLASH, level)
+  , _quote(quote)
+{
+}
+
+ParseState
+QuoteBackslashToken::on_continue(char c)
+{
+  if (c == _quote || c == '\\') {
+    _bs_char = c;
+    return ParseState::END_PASS;
+  }
+
+  return ParseState::INVALID;
+}
+
+std::string
+QuoteBackslashToken::string() const
+{
+  return { _bs_char };
+}
+
+QuoteTextToken::QuoteTextToken(QuoteType quote, size_t level)
+  : QuoteTextToken({}, quote, level)
+{
+}
+
+QuoteTextToken::QuoteTextToken(std::string text, QuoteType quote, size_t level)
+  : BaseToken(TokenType::TEXT, level)
+  , _text(std::move(text))
+  , _quote(quote)
+{
+}
+
+ParseState
+QuoteTextToken::on_continue(char c)
+{
+  if (QuoteBackslashToken::validate(c) || c == _quote) {
+    return ParseState::END;
+  }
+
+  _text += c;
+  return ParseState::CONTINUE;
+}
+
+std::string
+QuoteTextToken::string() const
+{
+  return _text;
+}
+
 // NOLINTNEXTLINE
-QuoteToken::QuoteToken(char quote, size_t level)
+QuoteToken::QuoteToken(QuoteType quote, size_t level)
   : BaseToken(TokenType::QUOTE, level)
   , _quote(quote)
 {
@@ -22,12 +72,12 @@ QuoteToken::on_continue(char c)
     return ParseState::END_PASS;
   }
 
-  if (c == '\\') {
-    current(std::make_shared<BackslashToken>(_quote, level() + 1));
+  if (QuoteBackslashToken::validate(c)) {
+    current(std::make_shared<QuoteBackslashToken>(_quote, level() + 1));
     return ParseState::CONTINUE;
   }
 
-  current(std::make_shared<TextToken>(_quote, level() + 1));
+  current(std::make_shared<QuoteTextToken>(_quote, level() + 1));
   return ParseState::REPEAT;
 }
 
@@ -38,8 +88,8 @@ QuoteToken::on_invalid(char c)
     return ParseState::INVALID;
   }
 
-  current(
-    std::make_shared<TextToken>(std::string{ '\\', c }, _quote, level() + 1));
+  current(std::make_shared<QuoteTextToken>(
+    std::string{ '\\', c }, _quote, level() + 1));
   return ParseState::CONTINUE;
 }
 
