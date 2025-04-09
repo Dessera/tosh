@@ -4,16 +4,16 @@
 
 namespace tosh::ast {
 
-RootToken::RootToken()
+Root::Root()
   : BaseToken(TokenType::ROOT)
 {
 }
 
 ParseState
-RootToken::on_continue(char c)
+Root::on_continue(char c)
 {
   if (c != ' ') {
-    current(std::make_shared<ExprToken>(level() + 1));
+    current(std::make_shared<Expr>());
     return ParseState::REPEAT;
   }
 

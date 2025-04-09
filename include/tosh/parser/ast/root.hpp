@@ -4,10 +4,10 @@
 
 namespace tosh::ast {
 
-class RootToken : public BaseToken
+class Root : public BaseToken
 {
 public:
-  RootToken();
+  Root();
 
 private:
   ParseState on_continue(char c) override;

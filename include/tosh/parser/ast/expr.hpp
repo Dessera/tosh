@@ -2,11 +2,9 @@
 
 #include "tosh/parser/ast/base.hpp"
 
-#include <cstddef>
-
 namespace tosh::ast {
 
-class BackslashToken : public BaseToken
+class Backslash : public BaseToken
 {
 private:
   char _bs_token{};
@@ -14,29 +12,29 @@ private:
 public:
   constexpr static bool validate(char c) { return c == '\\'; }
 
-  BackslashToken(size_t level = 0);
+  Backslash();
 
   ParseState on_continue(char c) override;
   [[nodiscard]] std::string string() const override;
 };
 
-class TextToken : public BaseToken
+class Text : public BaseToken
 {
 private:
   std::string _str;
 
 public:
-  TextToken(size_t level = 0);
-  TextToken(std::string str, size_t level = 0);
+  Text();
+  Text(std::string str);
 
   ParseState on_continue(char c) override;
   [[nodiscard]] std::string string() const override;
 };
 
-class ExprToken : public BaseToken
+class Expr : public BaseToken
 {
 public:
-  ExprToken(size_t level = 0);
+  Expr();
 
 private:
   ParseState on_continue(char c) override;

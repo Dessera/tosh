@@ -1,10 +1,8 @@
 #include "tosh/parser/ast/redirect.hpp"
 #include "tosh/parser/ast/base.hpp"
-#include "tosh/parser/ast/expr.hpp"
 #include "tosh/utils/redirect.hpp"
 
 #include <algorithm>
-#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -12,13 +10,13 @@
 namespace tosh::ast {
 
 // NOLINTNEXTLINE
-RedirectSrcToken::RedirectSrcToken(size_t level)
-  : BaseToken(TokenType::REDIRECT_SRC, level)
+RedirectSrc::RedirectSrc()
+  : BaseToken(TokenType::REDIRECT_SRC)
 {
 }
 
 ParseState
-RedirectSrcToken::on_continue(char c)
+RedirectSrc::on_continue(char c)
 {
   if (auto res = validate(c); res.has_value()) {
     // NOLINTNEXTLINE
@@ -30,19 +28,19 @@ RedirectSrcToken::on_continue(char c)
 }
 
 std::string
-RedirectSrcToken::string() const
+RedirectSrc::string() const
 {
   return std::to_string(_src);
 }
 
 // NOLINTNEXTLINE
-RedirectOpToken::RedirectOpToken(size_t level)
-  : BaseToken(TokenType::REDIRECT_OP, level)
+RedirectOp::RedirectOp()
+  : BaseToken(TokenType::REDIRECT_OP)
 {
 }
 
 ParseState
-RedirectOpToken::on_continue(char c)
+RedirectOp::on_continue(char c)
 {
   if (std::ranges::find(VALID_OPCS, c) != VALID_OPCS.end()) {
     _op += c;
@@ -57,19 +55,19 @@ RedirectOpToken::on_continue(char c)
 }
 
 std::string
-RedirectOpToken::string() const
+RedirectOp::string() const
 {
   return _op;
 }
 
 utils::RedirectOpType
-RedirectOpToken::to_optype() const
+RedirectOp::to_optype() const
 {
   return str_to_optype(_op);
 }
 
 utils::RedirectOpType
-RedirectOpToken::str_to_optype(std::string_view str)
+RedirectOp::str_to_optype(std::string_view str)
 {
   if (str == "<") {
     return utils::RedirectOpType::IN;
@@ -98,30 +96,29 @@ RedirectOpToken::str_to_optype(std::string_view str)
   [[unlikely]] return utils::RedirectOpType::UNKNOWN;
 }
 
-RedirectDestToken::RedirectDestToken(size_t level)
-  : TextToken(level)
+RedirectDest::RedirectDest()
 {
   type(TokenType::REDIRECT_DEST);
 }
 
 // NOLINTNEXTLINE
-RedirectToken::RedirectToken(size_t level)
-  : BaseToken(TokenType::REDIRECT, level)
+Redirect::Redirect()
+  : BaseToken(TokenType::REDIRECT)
 {
 }
 
 ParseState
-RedirectToken::on_continue(char c)
+Redirect::on_continue(char c)
 {
   if (_op == nullptr) {
-    if (RedirectSrcToken::validate(c).has_value() && _src == nullptr) {
-      _src = std::make_shared<RedirectSrcToken>(level() + 1);
+    if (RedirectSrc::validate(c).has_value() && _src == nullptr) {
+      _src = std::make_shared<RedirectSrc>();
       current(_src);
       return ParseState::REPEAT;
     }
 
-    if (RedirectOpToken::validate(c)) {
-      _op = std::make_shared<RedirectOpToken>(level() + 1);
+    if (RedirectOp::validate(c)) {
+      _op = std::make_shared<RedirectOp>();
       current(_op);
       return ParseState::REPEAT;
     }
@@ -134,7 +131,7 @@ RedirectToken::on_continue(char c)
       return ParseState::CONTINUE;
     }
 
-    _dest = std::make_shared<RedirectDestToken>(level() + 1);
+    _dest = std::make_shared<RedirectDest>();
     current(_dest);
     return ParseState::REPEAT;
   }
@@ -143,7 +140,7 @@ RedirectToken::on_continue(char c)
 }
 
 std::optional<utils::RedirectOp>
-RedirectToken::to_op() const
+Redirect::to_op() const
 {
   if (!is_complete()) {
     return std::nullopt;

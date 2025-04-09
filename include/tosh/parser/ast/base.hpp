@@ -35,18 +35,14 @@ enum class ParseState : uint8_t
   REPEAT    // Repeat parsing
 };
 
-class BaseToken
-  : public utils::INode<BaseToken>
-  , public utils::ICursor<BaseToken>
+class BaseToken : public utils::INode<BaseToken>
 {
 protected:
   // NOLINTNEXTLINE
   TokenType _type;
-  // NOLINTNEXTLINE
-  size_t _level;
 
 public:
-  BaseToken(TokenType type, size_t level = 0);
+  BaseToken(TokenType type);
   virtual ~BaseToken() = default;
 
   [[nodiscard]] virtual std::string string() const;
@@ -56,7 +52,6 @@ public:
 
   [[nodiscard]] constexpr TokenType type() const { return _type; }
   constexpr void type(TokenType type) { _type = type; }
-  [[nodiscard]] constexpr size_t level() const { return _level; }
 
   ParseState iter_next(char c);
 };
@@ -70,26 +65,34 @@ struct std::formatter<Derived, CharT>
 
   auto format(const Derived& token, std::format_context& ctx) const
   {
+    return std::format_to(ctx.out(), "{}", format_impl(&token, 0));
+  }
+
+private:
+  std::string format_impl(const tosh::ast::BaseToken* token, size_t level) const
+  {
     namespace views = std::ranges::views;
     namespace ranges = std::ranges;
 
-    if (token.empty()) {
-      return std::format_to(ctx.out(),
-                            "{}{}: {}",
-                            std::string(token.level() * 2, ' '),
-                            magic_enum::enum_name(token.type()),
-                            token.string());
+    if (token == nullptr) {
+      return {};
     }
 
-    auto children = token.nodes() | views::transform([](const auto& token) {
-                      return std::format("{}", *token);
+    if (token->empty()) {
+      return std::format("{}{}: {}",
+                         std::string(level * 2, ' '),
+                         magic_enum::enum_name(token->type()),
+                         token->string());
+    }
+
+    auto children = token->nodes() | views::transform([&](const auto& token) {
+                      return format_impl(token.get(), level + 1);
                     }) |
                     views::join_with('\n') | ranges::to<std::string>();
 
-    return std::format_to(ctx.out(),
-                          "{}{}: \n{}",
-                          std::string(token.level() * 2, ' '),
-                          magic_enum::enum_name(token.type()),
-                          children);
+    return std::format("{}{}: \n{}",
+                       std::string(level * 2, ' '),
+                       magic_enum::enum_name(token->type()),
+                       children);
   }
 };

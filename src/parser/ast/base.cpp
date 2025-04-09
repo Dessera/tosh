@@ -1,15 +1,11 @@
 #include "tosh/parser/ast/base.hpp"
 
-#include <cstddef>
-#include <memory>
 #include <ranges>
-#include <vector>
 
 namespace tosh::ast {
 
-BaseToken::BaseToken(TokenType type, size_t level)
+BaseToken::BaseToken(TokenType type)
   : _type(type)
-  , _level(level)
 {
 }
 

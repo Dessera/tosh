@@ -1,4 +1,5 @@
 #include "tosh/parser/parser.hpp"
+#include "tosh/parser/ast/base.hpp"
 #include "tosh/parser/ast/root.hpp"
 #include "tosh/parser/query.hpp"
 
@@ -6,9 +7,20 @@
 #include <istream>
 #include <memory>
 #include <optional>
+#include <print>
 #include <ranges>
 #include <string>
 #include <vector>
+
+namespace {
+
+constexpr bool
+is_redirect(const tosh::ast::BaseToken& token)
+{
+  return token.type() == tosh::ast::TokenType::REDIRECT;
+}
+
+}
 
 namespace tosh::parser {
 
@@ -46,7 +58,7 @@ detect_command(std::string_view command)
 ParseQuery
 TokenParser::parse(std::istream& input)
 {
-  auto root = std::make_shared<ast::RootToken>();
+  auto root = std::make_shared<ast::Root>();
 
   std::string buffer{};
   std::getline(input, buffer);
@@ -55,6 +67,9 @@ TokenParser::parse(std::istream& input)
     root->iter_next(c);
   }
   root->iter_next('\0');
+
+  auto res = root->find_all(is_redirect);
+  root->remove_all(is_redirect);
 
   return { root };
 }

@@ -12,13 +12,13 @@ namespace tosh::parser {
 class ParseQuery
 {
 private:
-  std::shared_ptr<ast::RootToken> _root{ nullptr };
+  std::shared_ptr<ast::Root> _root{ nullptr };
 
 public:
   ParseQuery() = default;
-  ParseQuery(std::shared_ptr<ast::RootToken> root);
+  ParseQuery(std::shared_ptr<ast::Root> root);
 
-  [[nodiscard]] const ast::RootToken& ast() const { return *_root; }
+  [[nodiscard]] const ast::Root& ast() const { return *_root; }
 };
 
 }

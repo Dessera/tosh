@@ -3,47 +3,47 @@
 #include "tosh/parser/ast/quote.hpp"
 #include "tosh/parser/ast/redirect.hpp"
 
-#include <cstddef>
 #include <memory>
+#include <string>
 
 namespace tosh::ast {
 
 // NOLINTNEXTLINE
-BackslashToken::BackslashToken(size_t level)
-  : BaseToken(TokenType::BACKSLASH, level)
+Backslash::Backslash()
+  : BaseToken(TokenType::BACKSLASH)
 {
 }
 
 ParseState
-BackslashToken::on_continue(char c)
+Backslash::on_continue(char c)
 {
   _bs_token = c;
   return ParseState::END_PASS;
 }
 
 std::string
-BackslashToken::string() const
+Backslash::string() const
 {
   return { _bs_token };
 }
 
 // NOLINTNEXTLINE
-TextToken::TextToken(size_t level)
-  : TextToken({}, level)
+Text::Text()
+  : Text(std::string{})
 {
 }
 
 // NOLINTNEXTLINE
-TextToken::TextToken(std::string str, size_t level)
-  : BaseToken(TokenType::TEXT, level)
+Text::Text(std::string str)
+  : BaseToken(TokenType::TEXT)
   , _str(std::move(str))
 {
 }
 
 ParseState
-TextToken::on_continue(char c)
+Text::on_continue(char c)
 {
-  if (QuoteToken::validate(c).has_value() || BackslashToken::validate(c) ||
+  if (QuoteExpr::validate(c).has_value() || Backslash::validate(c) ||
       c == ' ') {
     return ParseState::END;
   }
@@ -54,48 +54,48 @@ TextToken::on_continue(char c)
 }
 
 std::string
-TextToken::string() const
+Text::string() const
 {
   return _str;
 }
 
-ExprToken::ExprToken(size_t level)
-  : BaseToken(TokenType::EXPR, level)
+Expr::Expr()
+  : BaseToken(TokenType::EXPR)
 {
 }
 
 ParseState
-ExprToken::on_continue(char c)
+Expr::on_continue(char c)
 {
   if (c == ' ') {
     return ParseState::END_PASS;
   }
 
-  if (auto quote = QuoteToken::validate(c); quote.has_value()) {
-    current(std::make_shared<QuoteToken>(quote.value(), level() + 1));
+  if (auto quote = QuoteExpr::validate(c); quote.has_value()) {
+    current(std::make_shared<QuoteExpr>(quote.value()));
     return ParseState::CONTINUE;
   }
 
-  if (BackslashToken::validate(c)) {
-    current(std::make_shared<BackslashToken>(level() + 1));
+  if (Backslash::validate(c)) {
+    current(std::make_shared<Backslash>());
     return ParseState::CONTINUE;
   }
 
-  if (RedirectToken::validate(c)) {
-    current(std::make_shared<RedirectToken>(level() + 1));
+  if (Redirect::validate(c)) {
+    current(std::make_shared<Redirect>());
     return ParseState::REPEAT;
   }
 
-  current(std::make_shared<TextToken>(level() + 1));
+  current(std::make_shared<Text>());
   return ParseState::REPEAT;
 }
 
 ParseState
-ExprToken::on_invalid(char /*c*/)
+Expr::on_invalid(char /*c*/)
 {
   if (current()->type() == TokenType::REDIRECT) {
     current()->on_end();
-    current(std::make_shared<TextToken>(current()->string(), level() + 1));
+    current(std::make_shared<Text>(current()->string()));
     return ParseState::REPEAT;
   }
 
@@ -103,16 +103,16 @@ ExprToken::on_invalid(char /*c*/)
 }
 
 ParseState
-ExprToken::on_end()
+Expr::on_end()
 {
   if (current() != nullptr && current()->type() == TokenType::REDIRECT) {
     // convert shared BaseToken to shared RedirectToken
-    auto redirect = std::static_pointer_cast<RedirectToken>(current());
+    auto redirect = std::static_pointer_cast<Redirect>(current());
 
     // not a complete redirect ->> append to text token
     if (!redirect->is_complete()) {
       redirect->on_end();
-      current(std::make_shared<TextToken>(redirect->string(), level() + 1));
+      current(std::make_shared<Text>(redirect->string()));
     }
   }
 

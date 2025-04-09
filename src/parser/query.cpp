@@ -7,7 +7,7 @@
 
 namespace tosh::parser {
 
-ParseQuery::ParseQuery(std::shared_ptr<ast::RootToken> root)
+ParseQuery::ParseQuery(std::shared_ptr<ast::Root> root)
   : _root(std::move(root))
 {
 }
