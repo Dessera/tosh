@@ -1,4 +1,3 @@
-#include "tosh/utils/tree.hpp"
 
 #include <cassert>
 #include <print>
@@ -7,5 +6,4 @@
 int
 main()
 {
-  using tosh::utils::LinkedTree;
 }

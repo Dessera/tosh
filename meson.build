@@ -8,24 +8,8 @@ project(
 libmagic_enum_proj = subproject('magic_enum')
 libmagic_enum_dep = libmagic_enum_proj.get_variable('magic_enum_dep')
 
-lib_src = files(
-  'src/builtins/cd.cpp',
-  'src/builtins/check_args.cpp',
-  'src/builtins/echo.cpp',
-  'src/builtins/exec.cpp',
-  'src/builtins/exit.cpp',
-  'src/builtins/pwd.cpp',
-  'src/builtins/type.cpp',
-  'src/parser/ast/base.cpp',
-  'src/parser/ast/expr.cpp',
-  'src/parser/ast/quote.cpp',
-  # 'src/parser/ast/redirect.cpp',
-  'src/parser/ast/root.cpp',
-  'src/parser/parser.cpp',
-  'src/parser/query.cpp',
-  'src/repl.cpp',
-  'src/utils/redirect.cpp',
-)
+subdir('src')
+
 lib_inc = include_directories('include')
 
 install_subdir('include/tosh', install_dir: 'include')
@@ -51,8 +35,6 @@ executable(
   dependencies: deps,
   install: true,
 )
-
-# test('tosh', exe)
 
 # subdir tests
 subdir('tests')

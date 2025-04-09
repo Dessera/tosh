@@ -7,7 +7,6 @@
 #include "tosh/builtins/exit.hpp"
 #include "tosh/builtins/pwd.hpp"
 #include "tosh/builtins/type.hpp"
-#include "tosh/parser/parser.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -45,26 +44,28 @@ Repl::run()
 
   while (true) {
     std::print("$ ");
-    _query = _parser.parse(std::cin);
-
-    // null -> next line
-    if (_query.ast().empty()) {
-      continue;
-    }
-
-    // builtin -> execute builtin
-    auto args = _query.ast().nodes() |
-                views::transform([](auto& token) { return token->string(); }) |
-                ranges::to<std::vector<std::string>>();
-    if (has_builtin(args[0])) {
-      execute_builtin(args[0], args);
-      continue;
-    }
-
-    // not builtin -> exec builtin
-    args.insert(args.begin(), "exec");
-    execute_builtin("exec", args);
+    std::cin >> std::ws;
   }
+  //   _query = _parser.parse(std::cin);
+
+  //   // null -> next line
+  //   if (_query.ast().empty()) {
+  //     continue;
+  //   }
+
+  //   // builtin -> execute builtin
+  //   auto args = _query.ast().nodes() |
+  //               views::transform([](auto& token) { return token->string(); })
+  //               | ranges::to<std::vector<std::string>>();
+  //   if (has_builtin(args[0])) {
+  //     execute_builtin(args[0], args);
+  //     continue;
+  //   }
+
+  //   // not builtin -> exec builtin
+  //   args.insert(args.begin(), "exec");
+  //   execute_builtin("exec", args);
+  // }
 }
 
 bool
@@ -83,5 +84,4 @@ Repl::execute_builtin(const std::string& name,
 
   return _builtins.at(name)->execute((*this), args);
 }
-
 }
