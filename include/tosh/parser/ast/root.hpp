@@ -4,13 +4,13 @@
 
 namespace tosh::ast {
 
-class RootToken : public BaseToken
+class Root : public IToken
 {
 public:
-  RootToken();
+  Root();
 
-private:
-  ParseState on_continue(char c) override;
+  parser::ParseState on_continue(parser::TokenParseContext& ctx,
+                                 char c) override;
 };
 
 }

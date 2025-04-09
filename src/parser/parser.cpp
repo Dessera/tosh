@@ -1,11 +1,14 @@
 #include "tosh/parser/parser.hpp"
+#include "tosh/parser/ast/base.hpp"
 #include "tosh/parser/ast/root.hpp"
-#include "tosh/parser/query.hpp"
+// #include "tosh/parser/query.hpp"
+#include "tosh/utils/tree.hpp"
 
 #include <filesystem>
 #include <istream>
 #include <memory>
 #include <optional>
+#include <print>
 #include <ranges>
 #include <string>
 #include <vector>
@@ -43,20 +46,23 @@ detect_command(std::string_view command)
   return std::nullopt;
 }
 
-ParseQuery
-TokenParser::parse(std::istream& input)
+utils::LinkedTree<ast::IToken::Ptr>
+TokenParser::parse_tokens(std::istream& input)
 {
-  auto root = std::make_shared<ast::RootToken>();
+  TokenParseContext ctx{};
 
   std::string buffer{};
   std::getline(input, buffer);
 
   for (auto& c : buffer) {
-    root->iter_next(c);
+    auto res = ctx.current().lock()->on_continue(ctx, c);
   }
-  root->iter_next('\0');
+}
 
-  return { root };
+TokenParseContext::TokenParseContext()
+  : _ast(std::make_shared<ast::IToken>(ast::Root()))
+  , _stack({ _ast.begin() })
+{
 }
 
 }

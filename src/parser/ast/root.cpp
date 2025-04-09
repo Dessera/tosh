@@ -1,23 +1,24 @@
 #include "tosh/parser/ast/root.hpp"
 #include "tosh/parser/ast/base.hpp"
 #include "tosh/parser/ast/expr.hpp"
+#include "tosh/parser/parser.hpp"
 
 namespace tosh::ast {
 
-RootToken::RootToken()
-  : BaseToken(TokenType::ROOT)
+Root::Root()
+  : IToken(TokenType::ROOT)
 {
 }
 
-ParseState
-RootToken::on_continue(char c)
+parser::ParseState
+Root::on_continue(parser::TokenParseContext& ctx, char c)
 {
   if (c != ' ') {
-    current(std::make_shared<ExprToken>(level() + 1));
-    return ParseState::REPEAT;
+    ctx.push<Expr>();
+    return parser::ParseState::REPEAT;
   }
 
-  return ParseState::CONTINUE;
+  return parser::ParseState::CONTINUE;
 }
 
 }

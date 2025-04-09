@@ -1,96 +1,88 @@
 #include "tosh/parser/ast/quote.hpp"
 #include "tosh/parser/ast/base.hpp"
-
-#include <cstddef>
-#include <memory>
+#include "tosh/parser/parser.hpp"
 
 namespace tosh::ast {
 
-QuoteBackslashToken::QuoteBackslashToken(QuoteType quote, size_t level)
-  : BaseToken(TokenType::BACKSLASH, level)
+QuoteBackslash::QuoteBackslash(QuoteType quote)
+  : IToken(TokenType::BACKSLASH)
   , _quote(quote)
 {
 }
 
-ParseState
-QuoteBackslashToken::on_continue(char c)
+parser::ParseState
+QuoteBackslash::on_continue(parser::TokenParseContext& /*ctx*/, char c)
 {
-  if (c == _quote || c == '\\') {
+  if (c == _quote || validate(c)) {
     _bs_char = c;
-    return ParseState::END_PASS;
+    return parser::ParseState::END_PASS;
   }
 
-  return ParseState::INVALID;
+  return parser::ParseState::INVALID;
+}
+
+parser::ParseState
+QuoteBackslash::on_invalid(parser::TokenParseContext& ctx, char c)
+{
+  return parser::ParseState::INVALID;
 }
 
 std::string
-QuoteBackslashToken::string() const
+QuoteBackslash::string() const
 {
   return { _bs_char };
 }
 
-QuoteTextToken::QuoteTextToken(QuoteType quote, size_t level)
-  : QuoteTextToken({}, quote, level)
+QuoteText::QuoteText(QuoteType quote)
+  : QuoteText({}, quote)
 {
 }
 
-QuoteTextToken::QuoteTextToken(std::string text, QuoteType quote, size_t level)
-  : BaseToken(TokenType::TEXT, level)
+QuoteText::QuoteText(std::string text, QuoteType quote)
+  : IToken(TokenType::TEXT)
   , _text(std::move(text))
   , _quote(quote)
 {
 }
 
-ParseState
-QuoteTextToken::on_continue(char c)
+parser::ParseState
+QuoteText::on_continue(parser::TokenParseContext& /*ctx*/, char c)
 {
-  if (QuoteBackslashToken::validate(c) || c == _quote) {
-    return ParseState::END;
+  if (QuoteBackslash::validate(c) || c == _quote) {
+    return parser::ParseState::END;
   }
 
   _text += c;
-  return ParseState::CONTINUE;
+  return parser::ParseState::CONTINUE;
 }
 
 std::string
-QuoteTextToken::string() const
+QuoteText::string() const
 {
   return _text;
 }
 
 // NOLINTNEXTLINE
-QuoteToken::QuoteToken(QuoteType quote, size_t level)
-  : BaseToken(TokenType::QUOTE, level)
+QuoteExpr::QuoteExpr(QuoteType quote)
+  : IToken(TokenType::QUOTE)
   , _quote(quote)
 {
 }
 
-ParseState
-QuoteToken::on_continue(char c)
+parser::ParseState
+QuoteExpr::on_continue(parser::TokenParseContext& ctx, char c)
 {
   if (c == _quote) {
-    return ParseState::END_PASS;
+    return parser::ParseState::END_PASS;
   }
 
-  if (QuoteBackslashToken::validate(c)) {
-    current(std::make_shared<QuoteBackslashToken>(_quote, level() + 1));
-    return ParseState::CONTINUE;
+  if (QuoteBackslash::validate(c)) {
+    ctx.push<QuoteBackslash>(_quote);
+    return parser::ParseState::CONTINUE;
   }
 
-  current(std::make_shared<QuoteTextToken>(_quote, level() + 1));
-  return ParseState::REPEAT;
-}
-
-ParseState
-QuoteToken::on_invalid(char c)
-{
-  if (current()->type() != TokenType::BACKSLASH) {
-    return ParseState::INVALID;
-  }
-
-  current(std::make_shared<QuoteTextToken>(
-    std::string{ '\\', c }, _quote, level() + 1));
-  return ParseState::CONTINUE;
+  ctx.push<QuoteText>(_quote);
+  return parser::ParseState::REPEAT;
 }
 
 }

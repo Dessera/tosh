@@ -19,7 +19,7 @@ lib_src = files(
   'src/parser/ast/base.cpp',
   'src/parser/ast/expr.cpp',
   'src/parser/ast/quote.cpp',
-  'src/parser/ast/redirect.cpp',
+  # 'src/parser/ast/redirect.cpp',
   'src/parser/ast/root.cpp',
   'src/parser/parser.cpp',
   'src/parser/query.cpp',
@@ -44,7 +44,7 @@ inc = include_directories('include')
 src = files('src/main.cpp')
 deps = [dep_tosh_shared, libmagic_enum_dep]
 
-exe = executable(
+executable(
   'tosh',
   src,
   include_directories: inc,
@@ -52,7 +52,10 @@ exe = executable(
   install: true,
 )
 
-test('tosh', exe)
+# test('tosh', exe)
+
+# subdir tests
+subdir('tests')
 
 libs = [shlib]
 
