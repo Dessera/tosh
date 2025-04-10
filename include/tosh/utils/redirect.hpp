@@ -1,15 +1,28 @@
 #pragma once
 
 #include "magic_enum/magic_enum.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <format>
+#include <map>
 #include <string>
 #include <string_view>
 
 namespace tosh::utils {
+
+enum class RedirectException : uint8_t
+{
+  EFILE_NOT_FOUND,
+  EFILE_PERMISSION_DENIED,
+  EINVALID_DESTINATION,
+  EINVALID_SOURCE,
+  EINVALID_REDIRECT,
+  EUNKOWN
+};
 
 enum class RedirectOpType : uint8_t
 {
@@ -54,12 +67,22 @@ private:
   std::string _dst;
   RedirectOpType _type;
 
+  const inline static std::map<int, FILE*> IO_MAP = { { 0, stdin },
+                                                      { 1, stdout },
+                                                      { 2, stderr } };
+
 public:
   RedirectOp(int src, std::string dst, RedirectOpType type);
 
   [[nodiscard]] constexpr auto src() const { return _src; }
   [[nodiscard]] constexpr std::string_view dst() const { return _dst; }
   [[nodiscard]] constexpr auto type() const { return _type; }
+
+  std::expected<void, RedirectException> apply();
+
+private:
+  std::expected<void, RedirectException> file_reopen(const std::string& mode);
+  std::expected<void, RedirectException> file_merge();
 };
 
 }
@@ -70,7 +93,7 @@ struct std::formatter<tosh::utils::RedirectOp, CharT>
   constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
 
   constexpr auto format(const tosh::utils::RedirectOp& op,
-                        std::format_context& ctx)
+                        std::format_context& ctx) const
   {
     return std::format_to(ctx.out(),
                           "{} -> {} {}",

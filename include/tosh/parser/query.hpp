@@ -23,7 +23,9 @@ public:
              std::vector<utils::RedirectOp> redirects);
 
   [[nodiscard]] constexpr const auto& ast() const { return *_root; }
+  [[nodiscard]] constexpr auto& ast() { return *_root; }
   [[nodiscard]] constexpr const auto& redirects() const { return _redirects; }
+  [[nodiscard]] constexpr auto& redirects() { return _redirects; }
 };
 
 }
