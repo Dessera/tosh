@@ -60,7 +60,7 @@ RedirectOp::string() const
   return _op;
 }
 
-utils::RedirectOpType
+utils::RedirectType
 RedirectOp::to_optype() const
 {
   return utils::redirect_str_to_type(_op);
@@ -109,7 +109,7 @@ Redirect::on_continue(char c)
   return ParseState::END;
 }
 
-std::optional<utils::RedirectOp>
+std::optional<utils::Redirect>
 Redirect::to_op() const
 {
   if (!is_complete()) {
@@ -120,9 +120,9 @@ Redirect::to_op() const
   auto op_type = _op->to_optype();
 
   if (_src == nullptr) {
-    if (op_type == utils::RedirectOpType::IN ||
-        op_type == utils::RedirectOpType::HEREDOC ||
-        op_type == utils::RedirectOpType::IN_MERGE) {
+    if (op_type == utils::RedirectType::IN ||
+        op_type == utils::RedirectType::HEREDOC ||
+        op_type == utils::RedirectType::IN_MERGE) {
       fd = 0;
     } else {
       fd = 1;
@@ -131,7 +131,7 @@ Redirect::to_op() const
     fd = _src->to_fd();
   }
 
-  return utils::RedirectOp(fd, _dest->string(), op_type);
+  return utils::Redirect(fd, _dest->string(), op_type);
 };
 
 }

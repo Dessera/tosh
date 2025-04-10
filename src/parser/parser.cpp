@@ -85,8 +85,10 @@ TokenParser::parse(std::istream& input)
       return ptr->to_op();
     }) |
     views::filter([](const auto& op) { return op.has_value(); }) |
-    views::transform([](const auto& op) { return op.value(); }) |
-    ranges::to<std::vector<utils::RedirectOp>>();
+    views::transform([](const auto& op) {
+      return utils::RedirectFactory::create(op.value());
+    }) |
+    ranges::to<std::vector<std::shared_ptr<utils::RedirectOperation>>>();
   root->remove_all(is_redirect_expr);
 
   return { root, redirects };

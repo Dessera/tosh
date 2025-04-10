@@ -16,6 +16,7 @@ lib_src = files(
   'src/builtins/exit.cpp',
   'src/builtins/pwd.cpp',
   'src/builtins/type.cpp',
+  'src/error.cpp',
   'src/parser/ast/base.cpp',
   'src/parser/ast/expr.cpp',
   'src/parser/ast/quote.cpp',

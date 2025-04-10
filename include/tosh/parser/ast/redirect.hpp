@@ -13,7 +13,7 @@ namespace tosh::ast {
 class RedirectSrc : public Token
 {
 private:
-  int _src;
+  int _src{ 0 };
 
 public:
   constexpr static std::optional<int> validate(char c)
@@ -45,7 +45,7 @@ public:
   ParseState on_continue(char c) override;
   [[nodiscard]] std::string string() const override;
 
-  [[nodiscard]] utils::RedirectOpType to_optype() const;
+  [[nodiscard]] utils::RedirectType to_optype() const;
 };
 
 class RedirectDest : public Text
@@ -72,7 +72,7 @@ public:
   ParseState on_continue(char c) override;
 
   [[nodiscard]] constexpr bool is_complete() const { return _op && _dest; }
-  [[nodiscard]] std::optional<utils::RedirectOp> to_op() const;
+  [[nodiscard]] std::optional<utils::Redirect> to_op() const;
 };
 
 }

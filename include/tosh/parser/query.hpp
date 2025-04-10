@@ -15,12 +15,12 @@ class ParseQuery
 {
 private:
   std::shared_ptr<ast::Root> _root{ nullptr };
-  std::vector<utils::RedirectOp> _redirects;
+  std::vector<std::shared_ptr<utils::RedirectOperation>> _redirects;
 
 public:
   ParseQuery() = default;
   ParseQuery(std::shared_ptr<ast::Root> root,
-             std::vector<utils::RedirectOp> redirects);
+             std::vector<std::shared_ptr<utils::RedirectOperation>> redirects);
 
   [[nodiscard]] constexpr const auto& ast() const { return *_root; }
   [[nodiscard]] constexpr auto& ast() { return *_root; }

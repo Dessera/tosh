@@ -9,8 +9,9 @@
 
 namespace tosh::parser {
 
-ParseQuery::ParseQuery(std::shared_ptr<ast::Root> root,
-                       std::vector<utils::RedirectOp> redirects)
+ParseQuery::ParseQuery(
+  std::shared_ptr<ast::Root> root,
+  std::vector<std::shared_ptr<utils::RedirectOperation>> redirects)
   : _root(std::move(root))
   , _redirects(std::move(redirects))
 {

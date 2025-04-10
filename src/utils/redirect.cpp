@@ -1,83 +1,117 @@
 
 #include "tosh/utils/redirect.hpp"
+#include "tosh/error.hpp"
+
 #include <cerrno>
 #include <cstdio>
-#include <exception>
 #include <expected>
+#include <memory>
+#include <optional>
+#include <print>
 #include <string>
 #include <unistd.h>
+
+namespace {
+
+std::optional<int>
+str_to_fd(const std::string& str)
+try {
+  return std::stoi(str);
+} catch (...) {
+  return std::nullopt;
+}
+
+}
+
 namespace tosh::utils {
 
-RedirectOp::RedirectOp(int src, std::string dst, RedirectOpType type)
+Redirect::Redirect(int src, std::string dst, RedirectType type)
   : _src(src)
   , _dst(std::move(dst))
   , _type(type)
 {
 }
 
-std::expected<void, RedirectException>
-RedirectOp::apply()
+RedirectOperation::RedirectOperation(Redirect redirect)
+  : _redirect(std::move(redirect))
 {
-  switch (_type) {
-    case RedirectOpType::OUT:
-      return file_reopen("w");
-    case RedirectOpType::APPEND:
-      return file_reopen("a");
-    case RedirectOpType::IN:
-      return file_reopen("r");
-    case RedirectOpType::OUT_MERGE:
-    case RedirectOpType::IN_MERGE:
-      return file_merge();
-    default:
-      return std::unexpected(RedirectException::EINVALID_REDIRECT);
-  }
 }
 
-std::expected<void, RedirectException>
-RedirectOp::file_reopen(const std::string& mode)
+error::Result<void>
+RedirectOperation::apply()
 {
-  if (!IO_MAP.contains(_src)) {
-    return std::unexpected(RedirectException::EINVALID_SOURCE);
+  return {};
+}
+
+RedirectBasicOperation::RedirectBasicOperation(Redirect redirect,
+                                               bool append,
+                                               bool in)
+  : RedirectOperation(std::move(redirect))
+  , _append(append)
+  , _in(in)
+{
+}
+
+error::Result<void>
+RedirectBasicOperation::apply()
+{
+  // NOLINTNEXTLINE
+  auto mode = _in ? "r" : (_append ? "a" : "w");
+
+  auto* f = fdopen(data().src(), mode);
+  if (f == nullptr) {
+    return error::err(error::ErrorCode::REDIRECT_INVALID_DEST);
   }
-  auto* srcfile = IO_MAP.at(_src);
 
   // NOLINTNEXTLINE
-  auto* file = std::freopen(_dst.c_str(), mode.data(), srcfile);
-
-  if (file == nullptr) {
-    switch (errno) {
-      case EACCES:
-        return std::unexpected(RedirectException::EFILE_PERMISSION_DENIED);
-      default:
-        return std::unexpected(RedirectException::EFILE_NOT_FOUND);
-    }
+  if (std::freopen(data().dst().c_str(), mode, f) == nullptr) {
+    return error::err(error::ErrorCode::REDIRECT_INVALID_DEST);
   }
 
   return {};
 }
 
-std::expected<void, RedirectException>
-RedirectOp::file_merge()
+RedirectMergeOperation::RedirectMergeOperation(Redirect redirect)
+  : RedirectOperation(std::move(redirect))
 {
-  int dstfd = 0;
-  try {
-    dstfd = std::stoi(_dst);
-  } catch (const std::exception&) {
-    return std::unexpected(RedirectException::EINVALID_DESTINATION);
+}
+
+error::Result<void>
+RedirectMergeOperation::apply()
+{
+  auto fd = str_to_fd(data().dst());
+  if (!fd.has_value()) {
+    return error::err(error::ErrorCode::REDIRECT_INVALID_DEST,
+                      "Dest must be a valid fd");
   }
 
-  if (!IO_MAP.contains(_src)) {
-    return std::unexpected(RedirectException::EINVALID_SOURCE);
-  }
-
-  if (!IO_MAP.contains(dstfd)) {
-    return std::unexpected(RedirectException::EINVALID_DESTINATION);
-  }
-
-  if (dup2(_src, dstfd) == -1) {
-    return std::unexpected(RedirectException::EUNKOWN);
+  if (dup2(data().src(), fd.value()) == -1) {
+    return error::err(error::ErrorCode::UNKNOWN);
   }
 
   return {};
+}
+
+std::shared_ptr<RedirectOperation>
+RedirectFactory::create(const Redirect& redirect)
+{
+  if (redirect.type() == RedirectType::OUT) {
+    return std::make_shared<RedirectBasicOperation>(redirect, false, false);
+  }
+
+  if (redirect.type() == RedirectType::APPEND) {
+    return std::make_shared<RedirectBasicOperation>(redirect, true, false);
+  }
+
+  if (redirect.type() == RedirectType::IN) {
+    return std::make_shared<RedirectBasicOperation>(redirect, false, true);
+  }
+
+  if (redirect.type() == RedirectType::OUT_MERGE ||
+      redirect.type() == RedirectType::IN_MERGE) {
+    return std::make_shared<RedirectMergeOperation>(redirect);
+  }
+
+  return std::make_shared<RedirectOperation>(redirect);
 }
 }

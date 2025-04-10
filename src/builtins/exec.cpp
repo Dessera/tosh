@@ -1,6 +1,6 @@
 
 #include "tosh/builtins/exec.hpp"
-#include "magic_enum/magic_enum.hpp"
+#include "tosh/error.hpp"
 #include "tosh/parser/parser.hpp"
 #include "tosh/repl.hpp"
 
@@ -43,19 +43,13 @@ Exec::execute(repl::Repl& repl, std::span<const std::string> args)
   if (auto cmd = parser::detect_command(exec_args[0]); cmd.has_value()) {
     if (auto pid = fork(); pid == 0) {
       for (auto& rd : repl.get_query().redirects()) {
-        auto res = rd.apply();
-        if (!res.has_value()) {
-          std::println(std::cerr,
-                       "failed to apply redirect: {}",
-                       magic_enum::enum_name(res.error()));
-          exit(EXIT_FAILURE);
-        }
+        LOGERR_EXIT(rd->apply());
       }
 
       if (execvp(cmd.value().c_str(), exec_args.data()) == -1) {
         std::println(
           std::cerr, "failed to execute command: {}", std::strerror(errno));
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
       }
     } else if (pid > 0) {
       waitpid(pid, nullptr, 0);

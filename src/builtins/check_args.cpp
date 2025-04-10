@@ -19,7 +19,7 @@ CheckArgs::execute(repl::Repl& repl, std::span<const std::string> args)
 
   std::println("\nRedirects:");
   for (const auto& redirect : repl.get_query().redirects()) {
-    std::println("  {}", redirect);
+    std::println("  {}", redirect->data());
   }
 
   return EXIT_SUCCESS;
