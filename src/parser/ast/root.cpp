@@ -5,7 +5,7 @@
 namespace tosh::ast {
 
 Root::Root()
-  : BaseToken(TokenType::ROOT)
+  : Token(TokenType::ROOT)
 {
 }
 

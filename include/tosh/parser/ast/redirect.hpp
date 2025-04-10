@@ -7,11 +7,10 @@
 #include <array>
 #include <memory>
 #include <optional>
-#include <string_view>
 
 namespace tosh::ast {
 
-class RedirectSrc : public BaseToken
+class RedirectSrc : public Token
 {
 private:
   int _src;
@@ -30,11 +29,10 @@ public:
   [[nodiscard]] constexpr int to_fd() const { return _src; }
 };
 
-class RedirectOp : public BaseToken
+class RedirectOp : public Token
 {
 public:
   constexpr static std::array VALID_OPCS = { '<', '>', '&' };
-  constexpr static std::array VALID_OPS = { "<", ">", ">>", ">&", "<&" };
 
 private:
   std::string _op;
@@ -48,9 +46,6 @@ public:
   [[nodiscard]] std::string string() const override;
 
   [[nodiscard]] utils::RedirectOpType to_optype() const;
-
-private:
-  static utils::RedirectOpType str_to_optype(std::string_view str);
 };
 
 class RedirectDest : public Text
@@ -59,7 +54,7 @@ public:
   RedirectDest();
 };
 
-class Redirect : public BaseToken
+class Redirect : public Token
 {
 private:
   std::shared_ptr<RedirectSrc> _src{ nullptr };

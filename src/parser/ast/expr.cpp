@@ -10,7 +10,7 @@ namespace tosh::ast {
 
 // NOLINTNEXTLINE
 Backslash::Backslash()
-  : BaseToken(TokenType::BACKSLASH)
+  : Token(TokenType::BACKSLASH)
 {
 }
 
@@ -35,7 +35,7 @@ Text::Text()
 
 // NOLINTNEXTLINE
 Text::Text(std::string str)
-  : BaseToken(TokenType::TEXT)
+  : Token(TokenType::TEXT)
   , _str(std::move(str))
 {
 }
@@ -60,7 +60,7 @@ Text::string() const
 }
 
 Expr::Expr()
-  : BaseToken(TokenType::EXPR)
+  : Token(TokenType::EXPR)
 {
 }
 
@@ -106,7 +106,7 @@ ParseState
 Expr::on_end()
 {
   if (current() != nullptr && current()->type() == TokenType::REDIRECT) {
-    // convert shared BaseToken to shared RedirectToken
+    // convert shared Token to shared RedirectToken
     auto redirect = std::static_pointer_cast<Redirect>(current());
 
     // not a complete redirect ->> append to text token
@@ -116,7 +116,7 @@ Expr::on_end()
     }
   }
 
-  return BaseToken::on_end();
+  return Token::on_end();
 }
 
 }

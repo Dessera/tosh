@@ -35,15 +35,15 @@ enum class ParseState : uint8_t
   REPEAT    // Repeat parsing
 };
 
-class BaseToken : public utils::INode<BaseToken>
+class Token : public utils::INode<Token>
 {
 protected:
   // NOLINTNEXTLINE
   TokenType _type;
 
 public:
-  BaseToken(TokenType type);
-  virtual ~BaseToken() = default;
+  Token(TokenType type);
+  virtual ~Token() = default;
 
   [[nodiscard]] virtual std::string string() const;
   virtual ParseState on_invalid(char c);
@@ -58,7 +58,7 @@ public:
 
 }
 
-template<std::derived_from<tosh::ast::BaseToken> Derived, typename CharT>
+template<std::derived_from<tosh::ast::Token> Derived, typename CharT>
 struct std::formatter<Derived, CharT>
 {
   constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
@@ -69,7 +69,7 @@ struct std::formatter<Derived, CharT>
   }
 
 private:
-  std::string format_impl(const tosh::ast::BaseToken* token, size_t level) const
+  std::string format_impl(const tosh::ast::Token* token, size_t level) const
   {
     namespace views = std::ranges::views;
     namespace ranges = std::ranges;

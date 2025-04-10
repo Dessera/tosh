@@ -6,7 +6,7 @@
 namespace tosh::ast {
 
 QuoteBackslash::QuoteBackslash(QuoteType quote)
-  : BaseToken(TokenType::BACKSLASH)
+  : Token(TokenType::BACKSLASH)
   , _quote(quote)
 {
 }
@@ -34,7 +34,7 @@ QuoteText::QuoteText(QuoteType quote)
 }
 
 QuoteText::QuoteText(std::string text, QuoteType quote)
-  : BaseToken(TokenType::TEXT)
+  : Token(TokenType::TEXT)
   , _text(std::move(text))
   , _quote(quote)
 {
@@ -59,7 +59,7 @@ QuoteText::string() const
 
 // NOLINTNEXTLINE
 QuoteExpr::QuoteExpr(QuoteType quote)
-  : BaseToken(TokenType::QUOTE)
+  : Token(TokenType::QUOTE)
   , _quote(quote)
 {
 }

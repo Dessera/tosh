@@ -4,7 +4,7 @@
 
 namespace tosh::ast {
 
-class Root : public BaseToken
+class Root : public Token
 {
 public:
   Root();

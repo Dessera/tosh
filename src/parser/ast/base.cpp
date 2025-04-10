@@ -4,13 +4,13 @@
 
 namespace tosh::ast {
 
-BaseToken::BaseToken(TokenType type)
+Token::Token(TokenType type)
   : _type(type)
 {
 }
 
 ParseState
-BaseToken::iter_next(char c)
+Token::iter_next(char c)
 {
   auto status = ParseState::CONTINUE;
 
@@ -44,7 +44,7 @@ BaseToken::iter_next(char c)
 }
 
 std::string
-BaseToken::string() const
+Token::string() const
 {
   namespace views = std::ranges::views;
   namespace ranges = std::ranges;
@@ -55,13 +55,13 @@ BaseToken::string() const
 }
 
 ParseState
-BaseToken::on_invalid(char /*c*/)
+Token::on_invalid(char /*c*/)
 {
   return ParseState::INVALID;
 }
 
 ParseState
-BaseToken::on_end()
+Token::on_end()
 {
   if (current() == nullptr) {
     return ParseState::END;

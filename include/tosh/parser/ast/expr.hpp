@@ -4,7 +4,7 @@
 
 namespace tosh::ast {
 
-class Backslash : public BaseToken
+class Backslash : public Token
 {
 private:
   char _bs_token{};
@@ -18,7 +18,7 @@ public:
   [[nodiscard]] std::string string() const override;
 };
 
-class Text : public BaseToken
+class Text : public Token
 {
 private:
   std::string _str;
@@ -31,7 +31,7 @@ public:
   [[nodiscard]] std::string string() const override;
 };
 
-class Expr : public BaseToken
+class Expr : public Token
 {
 public:
   Expr();

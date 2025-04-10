@@ -14,7 +14,7 @@ enum QuoteType : char
   DOUBLE = '"',
 };
 
-class QuoteBackslash : public BaseToken
+class QuoteBackslash : public Token
 {
 private:
   char _bs_char{};
@@ -29,7 +29,7 @@ public:
   [[nodiscard]] std::string string() const override;
 };
 
-class QuoteText : public BaseToken
+class QuoteText : public Token
 {
 private:
   std::string _text;
@@ -43,7 +43,7 @@ public:
   [[nodiscard]] std::string string() const override;
 };
 
-class QuoteExpr : public BaseToken
+class QuoteExpr : public Token
 {
 private:
   QuoteType _quote;

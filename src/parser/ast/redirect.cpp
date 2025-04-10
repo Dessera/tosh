@@ -5,13 +5,12 @@
 #include <algorithm>
 #include <memory>
 #include <optional>
-#include <string_view>
 
 namespace tosh::ast {
 
 // NOLINTNEXTLINE
 RedirectSrc::RedirectSrc()
-  : BaseToken(TokenType::REDIRECT_SRC)
+  : Token(TokenType::REDIRECT_SRC)
 {
 }
 
@@ -35,7 +34,7 @@ RedirectSrc::string() const
 
 // NOLINTNEXTLINE
 RedirectOp::RedirectOp()
-  : BaseToken(TokenType::REDIRECT_OP)
+  : Token(TokenType::REDIRECT_OP)
 {
 }
 
@@ -47,7 +46,8 @@ RedirectOp::on_continue(char c)
     return ParseState::CONTINUE;
   }
 
-  if (std::ranges::find(VALID_OPS, _op) != VALID_OPS.end()) {
+  if (std::ranges::find(utils::REDIRECT_OP_STRS, _op) !=
+      utils::REDIRECT_OP_STRS.end()) {
     return ParseState::END;
   }
 
@@ -63,37 +63,7 @@ RedirectOp::string() const
 utils::RedirectOpType
 RedirectOp::to_optype() const
 {
-  return str_to_optype(_op);
-}
-
-utils::RedirectOpType
-RedirectOp::str_to_optype(std::string_view str)
-{
-  if (str == "<") {
-    return utils::RedirectOpType::IN;
-  }
-
-  if (str == ">") {
-    return utils::RedirectOpType::OUT;
-  }
-
-  if (str == ">>") {
-    return utils::RedirectOpType::APPEND;
-  }
-
-  if (str == "<<") {
-    return utils::RedirectOpType::HEREDOC;
-  }
-
-  if (str == "<&") {
-    return utils::RedirectOpType::IN_MERGE;
-  }
-
-  if (str == ">&") {
-    return utils::RedirectOpType::OUT_MERGE;
-  }
-
-  [[unlikely]] return utils::RedirectOpType::UNKNOWN;
+  return utils::redirect_str_to_type(_op);
 }
 
 RedirectDest::RedirectDest()
@@ -103,7 +73,7 @@ RedirectDest::RedirectDest()
 
 // NOLINTNEXTLINE
 Redirect::Redirect()
-  : BaseToken(TokenType::REDIRECT)
+  : Token(TokenType::REDIRECT)
 {
 }
 

@@ -1,8 +1,10 @@
 #pragma once
 
 #include "tosh/parser/ast/root.hpp"
+#include "tosh/utils/redirect.hpp"
 
 #include <memory>
+#include <vector>
 
 namespace tosh::parser {
 
@@ -13,12 +15,15 @@ class ParseQuery
 {
 private:
   std::shared_ptr<ast::Root> _root{ nullptr };
+  std::vector<utils::RedirectOp> _redirects;
 
 public:
   ParseQuery() = default;
-  ParseQuery(std::shared_ptr<ast::Root> root);
+  ParseQuery(std::shared_ptr<ast::Root> root,
+             std::vector<utils::RedirectOp> redirects);
 
-  [[nodiscard]] const ast::Root& ast() const { return *_root; }
+  [[nodiscard]] constexpr const auto& ast() const { return *_root; }
+  [[nodiscard]] constexpr const auto& redirects() const { return _redirects; }
 };
 
 }
