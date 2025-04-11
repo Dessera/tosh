@@ -35,8 +35,7 @@ public:
    */
   error::Result<void> run_proc(
     parser::ParseQuery& query,
-    const std::function<error::Result<void>(parser::ParseQuery&)>&
-      callback) noexcept;
+    const std::function<error::Result<void>(parser::ParseQuery&)>& callback);
 
   constexpr auto& parser() noexcept { return _parser; }
 
@@ -49,8 +48,7 @@ public:
    * @return true Builtin exists
    * @return false Builtin does not exist
    */
-  [[nodiscard]] constexpr bool has_builtin(
-    const std::string& name) const noexcept
+  [[nodiscard]] constexpr bool has_builtin(const std::string& name) const
   {
     return _builtins.find(name) != _builtins.end();
   }
@@ -63,7 +61,9 @@ public:
    * @return error::Result<void> Builtin result
    */
   error::Result<void> run_builtin(parser::ParseQuery& query,
-                                  const std::string& name) noexcept;
+                                  const std::string& name);
+
+  std::optional<std::string> find_command(std::string_view command);
 
 private:
   /**
@@ -72,7 +72,6 @@ private:
    * @param query Arguments to pass to builtin
    * @param name Name of builtin to run
    */
-  void _run_builtin(parser::ParseQuery& query,
-                    const std::string& name) noexcept;
+  void _run_builtin(parser::ParseQuery& query, const std::string& name);
 };
 }

@@ -24,7 +24,7 @@ Type::execute(repl::Repl& repl, parser::ParseQuery& query)
     const auto& symbol = *it;
     if (repl.has_builtin(symbol)) {
       std::println("{} is a shell builtin", symbol);
-    } else if (auto cmd = parser::detect_command(symbol); cmd.has_value()) {
+    } else if (auto cmd = repl.find_command(symbol); cmd.has_value()) {
       std::println("{} is {}", symbol, cmd.value());
     } else {
       std::println("{} not found", symbol);

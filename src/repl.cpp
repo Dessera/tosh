@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <print>
@@ -52,7 +53,14 @@ Repl::run()
 {
   while (true) {
     std::print("$ ");
-    auto query = _parser.parse(std::cin);
+
+    auto res = _parser.parse(std::cin);
+    if (!res.has_value()) {
+      res.error().log();
+      continue;
+    }
+
+    auto query = res.value();
 
     // null -> next line
     if (query.ast().empty()) {
@@ -78,7 +86,7 @@ Repl::run()
 }
 
 error::Result<void>
-Repl::run_builtin(parser::ParseQuery& query, const std::string& name) noexcept
+Repl::run_builtin(parser::ParseQuery& query, const std::string& name)
 {
 
   if (has_builtin(name)) {
@@ -89,9 +97,9 @@ Repl::run_builtin(parser::ParseQuery& query, const std::string& name) noexcept
 }
 
 error::Result<void>
-Repl::run_proc(parser::ParseQuery& query,
-               const std::function<error::Result<void>(parser::ParseQuery&)>&
-                 callback) noexcept
+Repl::run_proc(
+  parser::ParseQuery& query,
+  const std::function<error::Result<void>(parser::ParseQuery&)>& callback)
 {
   if (auto pid = fork(); pid == 0) {
     for (auto& redirect : query.redirects()) {
@@ -114,8 +122,40 @@ Repl::run_proc(parser::ParseQuery& query,
   }
 }
 
+std::optional<std::string>
+Repl::find_command(std::string_view command)
+{
+  namespace views = std::ranges::views;
+  namespace ranges = std::ranges;
+  namespace fs = std::filesystem;
+
+  if (fs::exists(command)) {
+    return std::string(command);
+  }
+
+  auto* envpath_cstr = std::getenv("PATH");
+  auto envpath =
+    envpath_cstr == nullptr ? std::string() : std::string(envpath_cstr);
+
+  auto path_list = envpath | views::split(':') |
+                   views::transform([](const auto& item) {
+                     return std::string(item.begin(), item.end());
+                   }) |
+                   ranges::to<std::vector<std::string>>();
+
+  for (auto& path : path_list) {
+    auto full_path = fs::path(path) / command;
+
+    if (fs::exists(full_path)) {
+      return full_path;
+    }
+  }
+
+  return std::nullopt;
+}
+
 void
-Repl::_run_builtin(parser::ParseQuery& query, const std::string& name) noexcept
+Repl::_run_builtin(parser::ParseQuery& query, const std::string& name)
 {
   // no such builtin -> exit
   if (!has_builtin(name)) {

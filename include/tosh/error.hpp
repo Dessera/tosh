@@ -36,7 +36,6 @@ namespace tosh::error {
 
 enum class ErrorCode : uint8_t
 {
-  BUILTIN_SUCCES = 0,
   BUILTIN_EXEC_FAILED,
   BUILTIN_FORK_FAILED,
   BUILTIN_INVALID_ARGS,
@@ -45,6 +44,8 @@ enum class ErrorCode : uint8_t
   REDIRECT_INVALID_SRC,
   REDIRECT_INVALID_DEST,
   REDIRECT_INVALID_TYPE,
+
+  PARSER_SYNTAX_ERROR,
 
   UNKNOWN
 };

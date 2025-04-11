@@ -22,16 +22,16 @@ public:
   virtual ~INode() = default;
 
   constexpr void add(const NodePtr& node) { _nodes.push_back(node); }
-  constexpr void pop_back() { _nodes.pop_back(); }
+  constexpr void pop_back() noexcept { _nodes.pop_back(); }
 
-  [[nodiscard]] constexpr auto& nodes() const { return _nodes; }
-  [[nodiscard]] constexpr auto& nodes() { return _nodes; }
+  [[nodiscard]] constexpr auto& nodes() const noexcept { return _nodes; }
+  [[nodiscard]] constexpr auto& nodes() noexcept { return _nodes; }
 
-  [[nodiscard]] bool empty() const { return _nodes.empty(); }
+  [[nodiscard]] bool empty() const noexcept { return _nodes.empty(); }
 
-  constexpr void current(const NodePtr& node) { _curr = node; }
-  [[nodiscard]] constexpr auto& current() const { return _curr; }
-  [[nodiscard]] constexpr auto& current() { return _curr; }
+  constexpr void current(const NodePtr& node) noexcept { _curr = node; }
+  [[nodiscard]] constexpr auto& current() const noexcept { return _curr; }
+  [[nodiscard]] constexpr auto& current() noexcept { return _curr; }
 
   std::vector<NodePtr> find_all(auto&& f) const
   {

@@ -50,8 +50,8 @@ public:
   virtual ParseState on_end();
   virtual ParseState on_continue(char c) = 0;
 
-  [[nodiscard]] constexpr TokenType type() const { return _type; }
-  constexpr void type(TokenType type) { _type = type; }
+  [[nodiscard]] constexpr TokenType type() const noexcept { return _type; }
+  constexpr void type(TokenType type) noexcept { _type = type; }
 
   ParseState iter_next(char c);
 };
