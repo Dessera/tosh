@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <sys/types.h>
 
 namespace tosh::repl {
 
@@ -20,6 +21,8 @@ private:
   parser::TokenParser _parser{};
 
   std::string _home;
+
+  pid_t _subpid{ -1 };
 
 public:
   Repl();
@@ -65,6 +68,8 @@ public:
 
   std::optional<std::string> find_command(std::string_view command);
 
+  void sigint_handler();
+
 private:
   /**
    * @brief Run builtin command with redirections
@@ -74,4 +79,5 @@ private:
    */
   void _run_builtin(parser::ParseQuery& query, const std::string& name);
 };
+
 }

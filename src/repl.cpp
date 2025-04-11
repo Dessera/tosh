@@ -115,7 +115,10 @@ Repl::run_proc(
       std::exit(EXIT_SUCCESS);
     }
   } else if (pid > 0) {
+    _subpid = pid;
     waitpid(pid, nullptr, 0);
+    _subpid = -1;
+
     return {};
   } else {
     return error::err(error::ErrorCode::BUILTIN_FORK_FAILED);
@@ -152,6 +155,15 @@ Repl::find_command(std::string_view command)
   }
 
   return std::nullopt;
+}
+
+void
+Repl::sigint_handler()
+{
+  if (_subpid != -1) {
+    kill(_subpid, SIGINT);
+    _subpid = -1;
+  }
 }
 
 void
