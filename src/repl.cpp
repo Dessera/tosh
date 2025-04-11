@@ -36,6 +36,15 @@ Repl::Repl()
         { "exec",
           std::shared_ptr<builtins::BaseCommand>(new builtins::Exec()) } })
 {
+  char* home = std::getenv("HOME");
+  if (home != nullptr) {
+    _home = home;
+  } else {
+    _home = "/";
+    std::println(
+      std::cerr,
+      "warning: cannot find user home directory, `~` will refer to `/`");
+  }
 }
 
 void
@@ -51,24 +60,38 @@ Repl::run()
     }
 
     // builtin -> execute builtin
-    auto args = query.args();
-    if (has_builtin(args[0])) {
-      if (auto res = _builtins.at(args[0])->execute(*this, query);
-          !res.has_value()) {
-      }
+    auto prefix = query.prefix();
+    if (has_builtin(prefix) && prefix != "exec") {
+      _run_builtin(query, prefix);
       continue;
     }
 
     // not builtin -> exec builtin
-    // args.insert(args.begin(), "exec");
-    // execute_builtin("exec", args);
+    if (prefix != "exec") {
+      query.prefix("exec");
+    }
+
+    if (auto res = run_builtin(query, "exec"); !res.has_value()) {
+      res.error().log();
+    }
   }
 }
 
 error::Result<void>
-Repl::run_proc(
-  parser::ParseQuery& query,
-  const std::function<error::Result<void>(parser::ParseQuery&)>& callback)
+Repl::run_builtin(parser::ParseQuery& query, const std::string& name) noexcept
+{
+
+  if (has_builtin(name)) {
+    return _builtins.at(name)->execute(*this, query);
+  }
+
+  return error::err(error::ErrorCode::BUILTIN_NOT_FOUND);
+}
+
+error::Result<void>
+Repl::run_proc(parser::ParseQuery& query,
+               const std::function<error::Result<void>(parser::ParseQuery&)>&
+                 callback) noexcept
 {
   if (auto pid = fork(); pid == 0) {
     for (auto& redirect : query.redirects()) {
@@ -81,13 +104,48 @@ Repl::run_proc(
       res.error().log();
       std::exit(EXIT_FAILURE);
     } else {
-      std::exit(0);
+      std::exit(EXIT_SUCCESS);
     }
   } else if (pid > 0) {
     waitpid(pid, nullptr, 0);
     return {};
   } else {
     return error::err(error::ErrorCode::BUILTIN_FORK_FAILED);
+  }
+}
+
+void
+Repl::_run_builtin(parser::ParseQuery& query, const std::string& name) noexcept
+{
+  // no such builtin -> exit
+  if (!has_builtin(name)) {
+    return;
+  }
+
+  // get redirects
+  bool err = false;
+
+  for (auto& redirect : query.redirects()) {
+    if (auto res = redirect->apply(); !res.has_value()) {
+      res.error().log();
+
+      err = true;
+      break;
+    }
+  }
+
+  if (!err) {
+    if (auto res = _builtins.at(name)->execute(*this, query);
+        !res.has_value()) {
+      res.error().log();
+    }
+  }
+
+  // restore redirects
+  for (auto& redirect : query.redirects()) {
+    if (auto res = redirect->restore(); !res.has_value()) {
+      res.error().log();
+    }
   }
 }
 

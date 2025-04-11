@@ -19,6 +19,8 @@ private:
 
   parser::TokenParser _parser{};
 
+  std::string _home;
+
 public:
   Repl();
 
@@ -33,14 +35,44 @@ public:
    */
   error::Result<void> run_proc(
     parser::ParseQuery& query,
-    const std::function<error::Result<void>(parser::ParseQuery&)>& callback);
+    const std::function<error::Result<void>(parser::ParseQuery&)>&
+      callback) noexcept;
 
-  constexpr auto& parser() { return _parser; }
+  constexpr auto& parser() noexcept { return _parser; }
 
-  [[nodiscard]] constexpr bool has_builtin(const std::string& name) const
+  [[nodiscard]] constexpr auto& home() const noexcept { return _home; }
+
+  /**
+   * @brief Check if builtin exists
+   *
+   * @param name Name of builtin to check
+   * @return true Builtin exists
+   * @return false Builtin does not exist
+   */
+  [[nodiscard]] constexpr bool has_builtin(
+    const std::string& name) const noexcept
   {
     return _builtins.find(name) != _builtins.end();
   }
-};
 
+  /**
+   * @brief Run builtin command
+   *
+   * @param query Arguments to pass to builtin
+   * @param name Name of builtin to run
+   * @return error::Result<void> Builtin result
+   */
+  error::Result<void> run_builtin(parser::ParseQuery& query,
+                                  const std::string& name) noexcept;
+
+private:
+  /**
+   * @brief Run builtin command with redirections
+   *
+   * @param query Arguments to pass to builtin
+   * @param name Name of builtin to run
+   */
+  void _run_builtin(parser::ParseQuery& query,
+                    const std::string& name) noexcept;
+};
 }

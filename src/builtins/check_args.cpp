@@ -9,25 +9,23 @@
 namespace tosh::builtins {
 
 error::Result<void>
-CheckArgs::execute(repl::Repl& repl, parser::ParseQuery& query)
+CheckArgs::execute(repl::Repl& /*repl*/, parser::ParseQuery& query)
 {
-  return repl.run_proc(query, [](auto& query) {
-    auto args = query.args();
+  auto args = query.args();
 
-    std::println("Args:");
-    for (const auto& arg : args) {
-      std::println("  {}", arg);
-    }
+  std::println("Args:");
+  for (const auto& arg : args) {
+    std::println("  {}", arg);
+  }
 
-    std::println("\nAst:\n{}", query.ast());
+  std::println("\nAst:\n{}", query.ast());
 
-    std::println("\nRedirects:");
-    for (const auto& redirect : query.redirects()) {
-      std::println("  {}", redirect->data());
-    }
+  std::println("\nRedirects:");
+  for (const auto& redirect : query.redirects()) {
+    std::println("  {}", redirect->data());
+  }
 
-    return error::Result<void>{};
-  });
+  return {};
 }
 
 }

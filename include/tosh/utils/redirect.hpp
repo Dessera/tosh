@@ -13,6 +13,12 @@
 #include <string>
 #include <string_view>
 
+namespace tosh::parser {
+
+class ParseQuery;
+
+}
+
 namespace tosh::utils {
 
 enum class RedirectType : uint8_t
@@ -76,6 +82,7 @@ public:
   virtual ~RedirectOperation() = default;
 
   virtual error::Result<void> apply();
+  virtual error::Result<void> restore();
 
   [[nodiscard]] constexpr auto& data() const { return _redirect; }
 };
@@ -92,20 +99,27 @@ private:
   bool _append;
   bool _in;
 
+  int _fd{ -1 };
+
 public:
   RedirectBasicOperation(Redirect redirect,
                          bool append = false,
                          bool in = false);
 
   error::Result<void> apply() override;
+  error::Result<void> restore() override;
 };
 
 class RedirectMergeOperation : public RedirectOperation
 {
+private:
+  int _fd{ -1 };
+
 public:
   RedirectMergeOperation(Redirect redirect);
 
   error::Result<void> apply() override;
+  error::Result<void> restore() override;
 };
 
 }

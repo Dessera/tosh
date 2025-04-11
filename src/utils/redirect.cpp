@@ -43,6 +43,12 @@ RedirectOperation::apply()
   return {};
 }
 
+error::Result<void>
+RedirectOperation::restore()
+{
+  return {};
+}
+
 RedirectBasicOperation::RedirectBasicOperation(Redirect redirect,
                                                bool append,
                                                bool in)
@@ -63,9 +69,29 @@ RedirectBasicOperation::apply()
     return error::err(error::ErrorCode::REDIRECT_INVALID_DEST);
   }
 
+  // dup original file descriptor
+  _fd = dup(data().src());
+  if (_fd == -1) {
+    return error::err(error::ErrorCode::UNKNOWN);
+  }
+
   // NOLINTNEXTLINE
   if (std::freopen(data().dst().c_str(), mode, f) == nullptr) {
+    // close dupped fd
+    close(_fd);
+    _fd = -1;
+
     return error::err(error::ErrorCode::REDIRECT_INVALID_DEST);
+  }
+
+  return {};
+}
+
+error::Result<void>
+RedirectBasicOperation::restore()
+{
+  if (_fd != -1 && dup2(_fd, data().src()) == -1) {
+    return error::err(error::ErrorCode::UNKNOWN);
   }
 
   return {};
@@ -85,7 +111,26 @@ RedirectMergeOperation::apply()
                       "Dest must be a valid fd");
   }
 
-  if (dup2(data().src(), fd.value()) == -1) {
+  _fd = dup(data().src());
+  if (_fd == -1) {
+    return error::err(error::ErrorCode::UNKNOWN);
+  }
+
+  if (dup2(fd.value(), data().src()) == -1) {
+    // close dupped fd
+    close(_fd);
+    _fd = -1;
+
+    return error::err(error::ErrorCode::UNKNOWN);
+  }
+
+  return {};
+}
+
+error::Result<void>
+RedirectMergeOperation::restore()
+{
+  if (_fd != -1 && dup2(_fd, data().src()) == -1) {
     return error::err(error::ErrorCode::UNKNOWN);
   }
 

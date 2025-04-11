@@ -7,54 +7,52 @@
 #include <filesystem>
 #include <print>
 #include <ranges>
+#include <system_error>
 
 namespace {
 
-std::filesystem::path
-get_home_directory()
-{
-  const auto* home = std::getenv("HOME");
-  if (home) {
-    return home;
-  }
-  return std::filesystem::current_path();
-}
+namespace fs = std::filesystem;
 
 }
 
 namespace tosh::builtins {
 
 error::Result<void>
-Cd::execute(repl::Repl& /*repl*/, parser::ParseQuery& query)
+Cd::execute(repl::Repl& repl, parser::ParseQuery& query)
 {
   namespace views = std::ranges::views;
 
   auto args = query.args();
 
-  if (args.size() <= 1) {
-    std::println("usage: {} <directory>", args[0]);
-    return error::err(error::ErrorCode::BUILTIN_INVALID_ARGS);
+  if (args.size() == 1) {
+    args.emplace_back("~");
   }
 
-  std::filesystem::path path{ args[1] };
-  std::filesystem::path path_to{};
+  fs::path path{ args[1] };
+  fs::path path_to{};
 
   if ((*path.begin() == "~")) {
-    path_to = get_home_directory();
+    path_to = repl.home();
 
     for (const auto& p : path | views::drop(1)) {
       path_to /= p;
     }
   } else {
-    path_to = std::filesystem::current_path() / path;
+    path_to = fs::current_path() / path;
   }
 
-  if (!std::filesystem::exists(path_to)) {
-    std::println("no such file or directory: {}", path.string());
-    return error::err(error::ErrorCode::BUILTIN_INVALID_ARGS);
+  if (!fs::exists(path_to) || !fs::is_directory(path_to)) {
+    return error::err(error::ErrorCode::BUILTIN_INVALID_ARGS,
+                      std::format("{} is not a directory", path_to.string()));
   }
 
-  std::filesystem::current_path(path_to);
+  std::error_code ec;
+  fs::current_path(path_to, ec);
+
+  if (ec) {
+    return error::err(error::ErrorCode::UNKNOWN, ec.message());
+  }
+
   return {};
 }
 
