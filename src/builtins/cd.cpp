@@ -1,5 +1,6 @@
 
 #include "tosh/builtins/cd.hpp"
+#include "tosh/error.hpp"
 #include "tosh/repl.hpp"
 
 #include <cstdlib>
@@ -23,14 +24,16 @@ get_home_directory()
 
 namespace tosh::builtins {
 
-int
-Cd::execute(repl::Repl& /*repl*/, std::span<const std::string> args)
+error::Result<void>
+Cd::execute(repl::Repl& /*repl*/, parser::ParseQuery& query)
 {
   namespace views = std::ranges::views;
 
-  if (args.size() == 1) {
+  auto args = query.args();
+
+  if (args.size() <= 1) {
     std::println("usage: {} <directory>", args[0]);
-    return EXIT_FAILURE;
+    return error::err(error::ErrorCode::BUILTIN_INVALID_ARGS);
   }
 
   std::filesystem::path path{ args[1] };
@@ -48,11 +51,11 @@ Cd::execute(repl::Repl& /*repl*/, std::span<const std::string> args)
 
   if (!std::filesystem::exists(path_to)) {
     std::println("no such file or directory: {}", path.string());
-    return EXIT_FAILURE;
+    return error::err(error::ErrorCode::BUILTIN_INVALID_ARGS);
   }
 
   std::filesystem::current_path(path_to);
-  return EXIT_SUCCESS;
+  return {};
 }
 
 }

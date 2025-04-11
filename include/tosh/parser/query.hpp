@@ -4,6 +4,7 @@
 #include "tosh/utils/redirect.hpp"
 
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace tosh::parser {
@@ -14,11 +15,10 @@ namespace tosh::parser {
 class ParseQuery
 {
 private:
-  std::shared_ptr<ast::Root> _root{ nullptr };
+  ast::Root::NodePtr _root;
   std::vector<std::shared_ptr<utils::RedirectOperation>> _redirects;
 
 public:
-  ParseQuery() = default;
   ParseQuery(std::shared_ptr<ast::Root> root,
              std::vector<std::shared_ptr<utils::RedirectOperation>> redirects);
 
@@ -26,6 +26,8 @@ public:
   [[nodiscard]] constexpr auto& ast() { return *_root; }
   [[nodiscard]] constexpr const auto& redirects() const { return _redirects; }
   [[nodiscard]] constexpr auto& redirects() { return _redirects; }
+
+  [[nodiscard]] std::vector<std::string> args() const;
 };
 
 }

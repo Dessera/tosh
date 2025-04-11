@@ -1,9 +1,11 @@
 #pragma once
 
 #include "tosh/builtins/base.hpp"
+#include "tosh/error.hpp"
 #include "tosh/parser/parser.hpp"
 #include "tosh/parser/query.hpp"
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -16,19 +18,22 @@ private:
   std::map<std::string, std::shared_ptr<builtins::BaseCommand>> _builtins;
 
   parser::TokenParser _parser{};
-  parser::ParseQuery _query;
 
 public:
   Repl();
 
   [[noreturn]] void run();
 
-  [[nodiscard]] bool has_builtin(const std::string& name) const;
-  int execute_builtin(const std::string& name,
-                      std::span<const std::string> args);
+  error::Result<void> execute(
+    parser::ParseQuery& query,
+    const std::function<error::Result<void>(parser::ParseQuery&)>& callback);
 
-  constexpr parser::TokenParser& get_parser() { return _parser; }
-  constexpr parser::ParseQuery& get_query() { return _query; }
+  constexpr auto& parser() { return _parser; }
+
+  [[nodiscard]] constexpr bool has_builtin(const std::string& name) const
+  {
+    return _builtins.find(name) != _builtins.end();
+  }
 };
 
 }

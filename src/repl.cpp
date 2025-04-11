@@ -7,6 +7,7 @@
 #include "tosh/builtins/exit.hpp"
 #include "tosh/builtins/pwd.hpp"
 #include "tosh/builtins/type.hpp"
+#include "tosh/error.hpp"
 #include "tosh/parser/parser.hpp"
 
 #include <cstdio>
@@ -15,8 +16,8 @@
 #include <iostream>
 #include <memory>
 #include <print>
-#include <ranges>
-#include <string>
+#include <sys/wait.h>
+#include <unistd.h>
 
 namespace tosh::repl {
 
@@ -40,48 +41,54 @@ Repl::Repl()
 void
 Repl::run()
 {
-  namespace views = std::ranges::views;
-  namespace ranges = std::ranges;
-
   while (true) {
     std::print("$ ");
-    _query = _parser.parse(std::cin);
+    auto query = _parser.parse(std::cin);
 
     // null -> next line
-    if (_query.ast().empty()) {
+    if (query.ast().empty()) {
       continue;
     }
 
     // builtin -> execute builtin
-    auto args = _query.ast().nodes() |
-                views::transform([](auto& token) { return token->string(); }) |
-                ranges::to<std::vector<std::string>>();
+    auto args = query.args();
     if (has_builtin(args[0])) {
-      execute_builtin(args[0], args);
+      if (auto res = _builtins.at(args[0])->execute(*this, query);
+          !res.has_value()) {
+      }
       continue;
     }
 
     // not builtin -> exec builtin
-    args.insert(args.begin(), "exec");
-    execute_builtin("exec", args);
+    // args.insert(args.begin(), "exec");
+    // execute_builtin("exec", args);
   }
 }
 
-bool
-Repl::has_builtin(const std::string& name) const
+error::Result<void>
+Repl::execute(
+  parser::ParseQuery& query,
+  const std::function<error::Result<void>(parser::ParseQuery&)>& callback)
 {
-  return _builtins.find(name) != _builtins.end();
-}
-
-int
-Repl::execute_builtin(const std::string& name,
-                      std::span<const std::string> args)
-{
-  if (!has_builtin(name)) {
-    return EXIT_FAILURE;
+  if (auto pid = fork(); pid == 0) {
+    for (auto& redirect : query.redirects()) {
+      if (auto res = redirect->apply(); !res.has_value()) {
+        res.error().log();
+        std::exit(EXIT_FAILURE);
+      }
+    }
+    if (auto res = callback(query); !res.has_value()) {
+      res.error().log();
+      std::exit(EXIT_FAILURE);
+    } else {
+      std::exit(0);
+    }
+  } else if (pid > 0) {
+    waitpid(pid, nullptr, 0);
+    return {};
+  } else {
+    return error::err(error::ErrorCode::BUILTIN_FORK_FAILED);
   }
-
-  return _builtins.at(name)->execute((*this), args);
 }
 
 }

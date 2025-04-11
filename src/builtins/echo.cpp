@@ -1,5 +1,7 @@
 
 #include "tosh/builtins/echo.hpp"
+#include "tosh/error.hpp"
+#include "tosh/repl.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -7,24 +9,28 @@
 
 namespace tosh::builtins {
 
-int
-Echo::execute(repl::Repl& /*repl*/, std::span<const std::string> args)
+error::Result<void>
+Echo::execute(repl::Repl& repl, parser::ParseQuery& query)
 {
-  if (args.size() == 1) {
-    std::println("usage: {} [string ...]", args[0]);
-    return EXIT_FAILURE;
-  }
+  return repl.execute(query, [](auto& query) -> error::Result<void> {
+    auto args = query.args();
 
-  for (auto it = args.begin() + 1; it != args.end(); ++it) {
-    std::cout << *it;
-    if (it + 1 != args.end()) {
-      std::cout << " ";
+    if (args.size() == 1) {
+      std::println("usage: {} [string ...]", args[0]);
+      return error::err(error::ErrorCode::BUILTIN_INVALID_ARGS);
     }
-  }
 
-  std::cout << '\n';
+    for (auto it = args.begin() + 1; it != args.end(); ++it) {
+      std::cout << *it;
+      if (it + 1 != args.end()) {
+        std::cout << " ";
+      }
+    }
 
-  return EXIT_SUCCESS;
+    std::cout << '\n';
+
+    return {};
+  });
 }
 
 }

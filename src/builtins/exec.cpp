@@ -6,8 +6,7 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
-#include <ostream>
+#include <format>
 #include <print>
 #include <ranges>
 #include <sys/wait.h>
@@ -15,53 +14,40 @@
 
 namespace {
 
-char*
-to_cstr(const std::string& str)
-{
-  // NOLINTNEXTLINE
-  return const_cast<char*>(str.c_str());
-}
-
 }
 
 namespace tosh::builtins {
 
-int
-Exec::execute(repl::Repl& repl, std::span<const std::string> args)
+error::Result<void>
+Exec::execute(repl::Repl& repl, parser::ParseQuery& query)
 {
-  namespace views = std::ranges::views;
+  return repl.execute(query, [](auto& query) -> error::Result<void> {
+    namespace views = std::ranges::views;
+    auto args = query.args();
 
-  if (args.size() == 1) {
-    std::println("usage: {} <command>", args[0]);
-    return EXIT_FAILURE;
-  }
-
-  auto exec_args = args | views::drop(1) | views::transform(to_cstr) |
-                   std::ranges::to<std::vector<char*>>();
-  exec_args.push_back(nullptr);
-
-  if (auto cmd = parser::detect_command(exec_args[0]); cmd.has_value()) {
-    if (auto pid = fork(); pid == 0) {
-      for (auto& rd : repl.get_query().redirects()) {
-        LOGERR_EXIT(rd->apply());
-      }
-
-      if (execvp(cmd.value().c_str(), exec_args.data()) == -1) {
-        std::println(
-          std::cerr, "failed to execute command: {}", std::strerror(errno));
-        std::exit(EXIT_FAILURE);
-      }
-    } else if (pid > 0) {
-      waitpid(pid, nullptr, 0);
-    } else {
-      std::println(std::cerr, "failed to fork: {}", std::strerror(errno));
+    if (args.size() <= 1) {
+      return error::err(error::ErrorCode::BUILTIN_INVALID_ARGS,
+                        std::format("usage: {} <command>", args[0]));
     }
-  } else {
-    std::println(std::cerr, "{}: command not found", exec_args[0]);
-    return EXIT_FAILURE;
-  }
 
-  return EXIT_SUCCESS;
+    auto exec_args = args | views::drop(1) |
+                     views::transform([](const auto& str) {
+                       return const_cast<char*>(str.c_str());
+                     }) |
+                     std::ranges::to<std::vector<char*>>();
+    exec_args.push_back(nullptr);
+
+    if (auto cmd = parser::detect_command(exec_args[0]); cmd.has_value()) {
+      if (execvp(cmd.value().c_str(), exec_args.data()) == -1) {
+        return error::err(error::ErrorCode::BUILTIN_EXEC_FAILED);
+      }
+    } else {
+      return error::err(error::ErrorCode::BUILTIN_INVALID_ARGS,
+                        std::format("{} command not found", exec_args[0]));
+    }
+
+    return {};
+  });
 }
 
 }

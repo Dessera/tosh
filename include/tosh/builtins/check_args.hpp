@@ -7,7 +7,8 @@ namespace tosh::builtins {
 class CheckArgs : public BaseCommand
 {
 public:
-  int execute(repl::Repl& repl, std::span<const std::string> args) override;
+  error::Result<void> execute(repl::Repl& repl,
+                              parser::ParseQuery& query) override;
 };
 
 }

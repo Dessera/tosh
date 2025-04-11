@@ -5,9 +5,11 @@
 
 namespace tosh::builtins {
 
-int
-Exit::execute(repl::Repl& /*repl*/, std::span<const std::string> args)
+error::Result<void>
+Exit::execute(repl::Repl& /*repl*/, parser::ParseQuery& query)
 {
+  auto args = query.args();
+
   int status = EXIT_SUCCESS;
   if (args.size() > 1) {
     try {
@@ -18,6 +20,8 @@ Exit::execute(repl::Repl& /*repl*/, std::span<const std::string> args)
   }
 
   std::exit(status);
+
+  return {};
 }
 
 }

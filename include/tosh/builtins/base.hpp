@@ -1,7 +1,7 @@
 #pragma once
 
-#include <span>
-#include <string>
+#include "tosh/error.hpp"
+#include "tosh/parser/query.hpp"
 
 namespace tosh::repl {
 
@@ -16,7 +16,8 @@ class BaseCommand
 public:
   virtual ~BaseCommand() = default;
 
-  virtual int execute(repl::Repl& repl, std::span<const std::string> args) = 0;
+  virtual error::Result<void> execute(repl::Repl& repl,
+                                      parser::ParseQuery& query) = 0;
 };
 
 }

@@ -17,4 +17,15 @@ ParseQuery::ParseQuery(
 {
 }
 
+std::vector<std::string>
+ParseQuery::args() const
+{
+  namespace views = std::ranges::views;
+  namespace ranges = std::ranges;
+
+  return ast().nodes() |
+         views::transform([](const auto& node) { return node->string(); }) |
+         ranges::to<std::vector<std::string>>();
+}
+
 }

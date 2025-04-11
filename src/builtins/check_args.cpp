@@ -1,5 +1,6 @@
 
 #include "tosh/builtins/check_args.hpp"
+#include "tosh/error.hpp"
 #include "tosh/repl.hpp"
 
 #include <cstdlib>
@@ -7,22 +8,26 @@
 
 namespace tosh::builtins {
 
-int
-CheckArgs::execute(repl::Repl& repl, std::span<const std::string> args)
+error::Result<void>
+CheckArgs::execute(repl::Repl& repl, parser::ParseQuery& query)
 {
-  std::println("Args:");
-  for (const auto& arg : args) {
-    std::println("  {}", arg);
-  }
+  return repl.execute(query, [](auto& query) {
+    auto args = query.args();
 
-  std::println("\nAst:\n{}", repl.get_query().ast());
+    std::println("Args:");
+    for (const auto& arg : args) {
+      std::println("  {}", arg);
+    }
 
-  std::println("\nRedirects:");
-  for (const auto& redirect : repl.get_query().redirects()) {
-    std::println("  {}", redirect->data());
-  }
+    std::println("\nAst:\n{}", query.ast());
 
-  return EXIT_SUCCESS;
+    std::println("\nRedirects:");
+    for (const auto& redirect : query.redirects()) {
+      std::println("  {}", redirect->data());
+    }
+
+    return error::Result<void>{};
+  });
 }
 
 }
