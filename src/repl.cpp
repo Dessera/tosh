@@ -66,7 +66,7 @@ Repl::run()
 }
 
 error::Result<void>
-Repl::execute(
+Repl::run_proc(
   parser::ParseQuery& query,
   const std::function<error::Result<void>(parser::ParseQuery&)>& callback)
 {

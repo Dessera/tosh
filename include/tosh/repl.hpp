@@ -24,7 +24,14 @@ public:
 
   [[noreturn]] void run();
 
-  error::Result<void> execute(
+  /**
+   * @brief Run callback in another process
+   *
+   * @param query Arguments to pass to callback
+   * @param callback Callback to run in another process
+   * @return error::Result<void> Process result
+   */
+  error::Result<void> run_proc(
     parser::ParseQuery& query,
     const std::function<error::Result<void>(parser::ParseQuery&)>& callback);
 

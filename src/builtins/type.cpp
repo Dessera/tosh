@@ -13,7 +13,7 @@ namespace tosh::builtins {
 error::Result<void>
 Type::execute(repl::Repl& repl, parser::ParseQuery& query)
 {
-  return repl.execute(query, [&repl](auto& query) -> error::Result<void> {
+  return repl.run_proc(query, [&repl](auto& query) -> error::Result<void> {
     auto args = query.args();
 
     if (args.size() == 1) {

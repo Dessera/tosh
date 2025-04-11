@@ -11,7 +11,7 @@ namespace tosh::builtins {
 error::Result<void>
 CheckArgs::execute(repl::Repl& repl, parser::ParseQuery& query)
 {
-  return repl.execute(query, [](auto& query) {
+  return repl.run_proc(query, [](auto& query) {
     auto args = query.args();
 
     std::println("Args:");

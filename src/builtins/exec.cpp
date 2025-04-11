@@ -21,7 +21,7 @@ namespace tosh::builtins {
 error::Result<void>
 Exec::execute(repl::Repl& repl, parser::ParseQuery& query)
 {
-  return repl.execute(query, [](auto& query) -> error::Result<void> {
+  return repl.run_proc(query, [](auto& query) -> error::Result<void> {
     namespace views = std::ranges::views;
     auto args = query.args();
 

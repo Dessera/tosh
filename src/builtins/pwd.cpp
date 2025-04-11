@@ -12,7 +12,7 @@ namespace tosh::builtins {
 error::Result<void>
 Pwd::execute(repl::Repl& repl, parser::ParseQuery& query)
 {
-  return repl.execute(query, [](auto& /*query*/) -> error::Result<void> {
+  return repl.run_proc(query, [](auto& /*query*/) -> error::Result<void> {
     std::println("{}", std::filesystem::current_path().string());
     return {};
   });
