@@ -46,6 +46,9 @@ Repl::Repl()
       std::cerr,
       "warning: cannot find user home directory, `~` will refer to `/`");
   }
+
+  std::cout << std::unitbuf;
+  std::cerr << std::unitbuf;
 }
 
 void
@@ -54,7 +57,7 @@ Repl::run()
   while (true) {
     std::print("$ ");
 
-    auto res = _parser.parse(std::cin);
+    auto res = _parser.parse();
     if (!res.has_value()) {
       res.error().log();
       continue;

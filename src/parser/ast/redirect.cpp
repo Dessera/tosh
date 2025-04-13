@@ -17,6 +17,10 @@ RedirectSrc::RedirectSrc()
 ParseState
 RedirectSrc::on_continue(char c)
 {
+  if (c == '\n') {
+    return ParseState::INVALID;
+  }
+
   if (auto res = validate(c); res.has_value()) {
     // NOLINTNEXTLINE
     _src = _src * 10 + res.value();
@@ -97,7 +101,7 @@ Redirect::on_continue(char c)
   }
 
   if (_dest == nullptr) {
-    if (c == ' ') {
+    if (c == ' ' || c == '\n') {
       return ParseState::CONTINUE;
     }
 

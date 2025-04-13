@@ -18,14 +18,21 @@ Backslash::Backslash()
 ParseState
 Backslash::on_continue(char c)
 {
-  _bs_token = c;
+  if (c != '\n') {
+    _bs_token = c;
+  }
+
   return ParseState::END_PASS;
 }
 
 std::string
 Backslash::string() const
 {
-  return { _bs_token };
+  if (_bs_token != '\0') {
+    return { _bs_token };
+  }
+
+  return std::string{};
 }
 
 // NOLINTNEXTLINE
@@ -50,7 +57,7 @@ ParseState
 Text::on_continue(char c)
 {
   if (QuoteExpr::validate(c).has_value() || Backslash::validate(c) ||
-      c == ' ') {
+      c == ' ' || c == '\n') {
     return ParseState::END;
   }
 
@@ -73,8 +80,8 @@ Expr::Expr()
 ParseState
 Expr::on_continue(char c)
 {
-  if (c == ' ') {
-    return ParseState::END_PASS;
+  if (c == ' ' || c == '\n') {
+    return ParseState::END;
   }
 
   if (auto quote = QuoteExpr::validate(c); quote.has_value()) {
@@ -97,11 +104,16 @@ Expr::on_continue(char c)
 }
 
 ParseState
-Expr::on_invalid(char /*c*/)
+Expr::on_invalid(char c)
 {
   if (current()->type() == TokenType::REDIRECT) {
     current()->on_end();
     current(std::make_shared<Text>(current()->string()));
+
+    if (c == '\n') {
+      return ParseState::END;
+    }
+
     return ParseState::REPEAT;
   }
 

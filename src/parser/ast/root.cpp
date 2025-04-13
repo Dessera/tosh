@@ -12,6 +12,10 @@ Root::Root()
 ParseState
 Root::on_continue(char c)
 {
+  if (c == '\n') {
+    return ParseState::END;
+  }
+
   if (c != ' ') {
     current(std::make_shared<Expr>());
     return ParseState::REPEAT;

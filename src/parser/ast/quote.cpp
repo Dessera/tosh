@@ -14,6 +14,10 @@ QuoteBackslash::QuoteBackslash(QuoteType quote)
 ParseState
 QuoteBackslash::on_continue(char c)
 {
+  if (c == '\n') {
+    return ParseState::END_PASS;
+  }
+
   if (c == _quote || c == '\\') {
     _bs_char = c;
     return ParseState::END_PASS;
@@ -25,7 +29,11 @@ QuoteBackslash::on_continue(char c)
 std::string
 QuoteBackslash::string() const
 {
-  return { _bs_char };
+  if (_bs_char != '\0') {
+    return { _bs_char };
+  }
+
+  return std::string{};
 }
 
 QuoteText::QuoteText(QuoteType quote)
