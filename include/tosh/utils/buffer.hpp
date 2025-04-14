@@ -9,6 +9,7 @@ namespace tosh::utils {
 
 enum class CommandType : uint8_t
 {
+  END = 0x04,
   TAB = 0x09,
   NEXT_LINE = 0x0a,
   ESCAPE = 0x1b,
@@ -45,6 +46,8 @@ public:
    * @param c The character to insert
    */
   void insert(char c);
+
+  void insert(std::string_view str);
 
   /**
    * @brief Insert a character only in stream

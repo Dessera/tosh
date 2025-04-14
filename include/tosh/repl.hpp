@@ -9,7 +9,9 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <sys/types.h>
+#include <vector>
 
 namespace tosh::repl {
 
@@ -17,11 +19,7 @@ class Repl
 {
 private:
   std::map<std::string, std::shared_ptr<builtins::BaseCommand>> _builtins;
-
   parser::TokenParser _parser{};
-
-  std::string _home;
-
   pid_t _subpid{ -1 };
 
 public:
@@ -42,8 +40,6 @@ public:
 
   constexpr auto& parser() noexcept { return _parser; }
 
-  [[nodiscard]] constexpr auto& home() const noexcept { return _home; }
-
   /**
    * @brief Check if builtin exists
    *
@@ -57,16 +53,20 @@ public:
   }
 
   /**
-   * @brief Run builtin command
+   * @brief Run builtin command with no fd operations
    *
    * @param query Arguments to pass to builtin
    * @param name Name of builtin to run
    * @return error::Result<void> Builtin result
    */
-  error::Result<void> run_builtin(parser::ParseQuery& query,
-                                  const std::string& name);
+  error::Result<void> run_builtin_no_ops(parser::ParseQuery& query,
+                                         const std::string& name);
 
-  std::optional<std::string> find_command(std::string_view command);
+  std::vector<std::string> find_command_full(std::string_view command);
+
+  std::vector<std::string> find_command_fuzzy(std::string_view command);
+  std::vector<std::string> find_builtin_fuzzy(std::string_view command);
+  std::vector<std::string> find_fuzzy(std::string_view command);
 
   void sigint_handler();
 
@@ -77,7 +77,7 @@ private:
    * @param query Arguments to pass to builtin
    * @param name Name of builtin to run
    */
-  void _run_builtin(parser::ParseQuery& query, const std::string& name);
+  void run_builtin(parser::ParseQuery& query, const std::string& name);
 };
 
 }

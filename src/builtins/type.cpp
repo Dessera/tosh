@@ -1,7 +1,6 @@
 
 #include "tosh/builtins/type.hpp"
 #include "tosh/error.hpp"
-#include "tosh/parser/parser.hpp"
 #include "tosh/repl.hpp"
 
 #include <cstdlib>
@@ -24,8 +23,12 @@ Type::execute(repl::Repl& repl, parser::ParseQuery& query)
     const auto& symbol = *it;
     if (repl.has_builtin(symbol)) {
       std::println("{} is a shell builtin", symbol);
-    } else if (auto cmd = repl.find_command(symbol); cmd.has_value()) {
-      std::println("{} is {}", symbol, cmd.value());
+    } else if (auto cmd = repl.find_command_full(symbol); !cmd.empty()) {
+      std::print("{}:", symbol);
+      for (auto& c : cmd) {
+        std::print(" {}", c);
+      }
+      std::println("");
     } else {
       std::println("{} not found", symbol);
     }

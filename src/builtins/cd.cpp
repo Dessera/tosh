@@ -13,12 +13,19 @@ namespace {
 
 namespace fs = std::filesystem;
 
+std::string
+get_home()
+{
+  char* home = std::getenv("HOME");
+  return home ? home : "";
+}
+
 }
 
 namespace tosh::builtins {
 
 error::Result<void>
-Cd::execute(repl::Repl& repl, parser::ParseQuery& query)
+Cd::execute(repl::Repl& /*repl*/, parser::ParseQuery& query)
 {
   namespace views = std::ranges::views;
 
@@ -32,7 +39,7 @@ Cd::execute(repl::Repl& repl, parser::ParseQuery& query)
   fs::path path_to{};
 
   if ((*path.begin() == "~")) {
-    path_to = repl.home();
+    path_to = get_home();
 
     for (const auto& p : path | views::drop(1)) {
       path_to /= p;

@@ -5,7 +5,6 @@
 
 #include <memory>
 #include <string>
-#include <string_view>
 
 namespace tosh::ast {
 
@@ -45,11 +44,6 @@ Text::Text()
 Text::Text(std::string str)
   : Token(TokenType::TEXT)
   , _str(std::move(str))
-{
-}
-
-Text::Text(std::string_view str)
-  : Text(std::string{ str })
 {
 }
 

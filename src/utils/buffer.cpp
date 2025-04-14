@@ -73,6 +73,14 @@ CommandBuffer::insert(char c)
 }
 
 void
+CommandBuffer::insert(std::string_view str)
+{
+  for (auto c : str) {
+    insert(c);
+  }
+}
+
+void
 CommandBuffer::stream_insert(char c)
 {
   *_out << c;
@@ -104,6 +112,10 @@ CommandBuffer::getchar()
 
     if (is_command(c, CommandType::BACKSPACE)) {
       remove();
+      return c;
+    }
+
+    if (is_command(c, CommandType::END) || is_command(c, CommandType::TAB)) {
       return c;
     }
 

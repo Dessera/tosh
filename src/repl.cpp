@@ -9,6 +9,7 @@
 #include "tosh/builtins/type.hpp"
 #include "tosh/error.hpp"
 #include "tosh/parser/parser.hpp"
+#include "tosh/utils/env.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -17,8 +18,10 @@
 #include <iostream>
 #include <memory>
 #include <print>
+#include <ranges>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <vector>
 
 namespace tosh::repl {
 
@@ -37,16 +40,6 @@ Repl::Repl()
         { "exec",
           std::shared_ptr<builtins::BaseCommand>(new builtins::Exec()) } })
 {
-  char* home = std::getenv("HOME");
-  if (home != nullptr) {
-    _home = home;
-  } else {
-    _home = "/";
-    std::println(
-      std::cerr,
-      "warning: cannot find user home directory, `~` will refer to `/`");
-  }
-
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
 }
@@ -57,7 +50,7 @@ Repl::run()
   while (true) {
     std::print("$ ");
 
-    auto res = _parser.parse();
+    auto res = _parser.parse(*this);
     if (!res.has_value()) {
       res.error().log();
       continue;
@@ -73,7 +66,7 @@ Repl::run()
     // builtin -> execute builtin
     auto prefix = query.prefix();
     if (has_builtin(prefix) && prefix != "exec") {
-      _run_builtin(query, prefix);
+      run_builtin(query, prefix);
       continue;
     }
 
@@ -82,14 +75,14 @@ Repl::run()
       query.prefix("exec");
     }
 
-    if (auto res = run_builtin(query, "exec"); !res.has_value()) {
+    if (auto res = run_builtin_no_ops(query, "exec"); !res.has_value()) {
       res.error().log();
     }
   }
 }
 
 error::Result<void>
-Repl::run_builtin(parser::ParseQuery& query, const std::string& name)
+Repl::run_builtin_no_ops(parser::ParseQuery& query, const std::string& name)
 {
 
   if (has_builtin(name)) {
@@ -128,36 +121,69 @@ Repl::run_proc(
   }
 }
 
-std::optional<std::string>
-Repl::find_command(std::string_view command)
+std::vector<std::string>
+Repl::find_command_full(std::string_view command)
 {
   namespace views = std::ranges::views;
   namespace ranges = std::ranges;
   namespace fs = std::filesystem;
 
-  if (fs::exists(command)) {
-    return std::string(command);
-  }
+  auto envpath = command.starts_with(".") || command.starts_with("..")
+                   ? fs::current_path().string()
+                   : utils::getenv("PATH");
 
-  auto* envpath_cstr = std::getenv("PATH");
-  auto envpath =
-    envpath_cstr == nullptr ? std::string() : std::string(envpath_cstr);
+  return envpath | views::split(':') |
+         views::transform([&command](const auto& ep) {
+           return fs::path(std::string(ep.begin(), ep.end())) / command;
+         }) |
+         views::filter([](const auto& p) { return fs::is_regular_file(p); }) |
+         views::transform([](const auto& p) { return p.string(); }) |
+         ranges::to<std::vector<std::string>>();
+}
 
-  auto path_list = envpath | views::split(':') |
-                   views::transform([](const auto& item) {
-                     return std::string(item.begin(), item.end());
-                   }) |
-                   ranges::to<std::vector<std::string>>();
+std::vector<std::string>
+Repl::find_command_fuzzy(std::string_view command)
+{
+  namespace views = std::ranges::views;
+  namespace ranges = std::ranges;
+  namespace fs = std::filesystem;
 
-  for (auto& path : path_list) {
-    auto full_path = fs::path(path) / command;
+  return utils::getenv("PATH") | views::split(':') |
+         views::transform([](const auto& ep) {
+           return fs::path(std::string(ep.begin(), ep.end()));
+         }) |
+         views::filter([](const auto& p) { return fs::is_directory(p); }) |
+         views::transform(
+           [](const auto& p) { return fs::directory_iterator(p); }) |
+         views::join | views::filter([&command](const auto& p) {
+           return p.path().filename().string().starts_with(command);
+         }) |
+         views::transform(
+           [](const auto& p) { return p.path().filename().string(); }) |
+         ranges::to<std::vector<std::string>>();
+}
 
-    if (fs::exists(full_path)) {
-      return full_path;
-    }
-  }
+std::vector<std::string>
+Repl::find_builtin_fuzzy(std::string_view command)
+{
+  namespace views = std::ranges::views;
+  namespace ranges = std::ranges;
 
-  return std::nullopt;
+  return _builtins | views::keys | views::filter([&command](const auto& item) {
+           return item.starts_with(command);
+         }) |
+         ranges::to<std::vector<std::string>>();
+}
+
+std::vector<std::string>
+Repl::find_fuzzy(std::string_view command)
+{
+  auto commands = find_command_fuzzy(command);
+  auto builtins = find_builtin_fuzzy(command);
+
+  commands.insert(commands.end(), builtins.begin(), builtins.end());
+
+  return commands;
 }
 
 void
@@ -170,7 +196,7 @@ Repl::sigint_handler()
 }
 
 void
-Repl::_run_builtin(parser::ParseQuery& query, const std::string& name)
+Repl::run_builtin(parser::ParseQuery& query, const std::string& name)
 {
   // no such builtin -> exit
   if (!has_builtin(name)) {

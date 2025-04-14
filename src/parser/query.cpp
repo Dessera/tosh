@@ -5,6 +5,7 @@
 #include "tosh/utils/redirect.hpp"
 
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -38,7 +39,7 @@ ParseQuery::prefix() const
 void
 ParseQuery::prefix(std::string_view prefix)
 {
-  ast().nodes().push_front(std::make_shared<ast::Text>(prefix));
+  ast().nodes().push_front(std::make_shared<ast::Text>(std::string(prefix)));
 }
 
 }

@@ -36,8 +36,8 @@ Exec::execute(repl::Repl& repl, parser::ParseQuery& query)
                      std::ranges::to<std::vector<char*>>();
     exec_args.push_back(nullptr);
 
-    if (auto cmd = repl.find_command(exec_args[0]); cmd.has_value()) {
-      if (execvp(cmd.value().c_str(), exec_args.data()) == -1) {
+    if (auto cmd = repl.find_command_full(exec_args[0]); !cmd.empty()) {
+      if (execvp(cmd[0].c_str(), exec_args.data()) == -1) {
         return error::err(error::ErrorCode::BUILTIN_EXEC_FAILED);
       }
     } else {

@@ -1,9 +1,11 @@
 #include "tosh/parser/parser.hpp"
 #include "tosh/error.hpp"
 #include "tosh/parser/ast/base.hpp"
+#include "tosh/parser/ast/expr.hpp"
 #include "tosh/parser/ast/redirect.hpp"
 #include "tosh/parser/ast/root.hpp"
 #include "tosh/parser/query.hpp"
+#include "tosh/repl.hpp"
 #include "tosh/utils/buffer.hpp"
 #include "tosh/utils/redirect.hpp"
 
@@ -38,7 +40,7 @@ is_redirect_expr(const tosh::ast::Token& token)
 namespace tosh::parser {
 
 error::Result<ParseQuery>
-TokenParser::parse()
+TokenParser::parse(repl::Repl& repl)
 try {
   namespace views = std::ranges::views;
   namespace ranges = std::ranges;
@@ -71,6 +73,23 @@ try {
         root->parse_next(c);
       }
       continue;
+    }
+
+    if (utils::is_command(c, utils::CommandType::TAB) &&
+        root->current() != nullptr) {
+      root->current()->parse_next('\0');
+      auto curr = root->current()->string();
+      auto res = repl.find_fuzzy(curr);
+      if (!res.empty()) {
+        auto s = res.front().substr(curr.size());
+        buffer.insert(s);
+        root->current()->current(std::make_shared<ast::Text>(s));
+      }
+    }
+
+    if (utils::is_command(c, utils::CommandType::END) && root->empty()) {
+      root->add(std::make_shared<ast::Text>("exit"));
+      break;
     }
   }
   root->parse_next('\0');
