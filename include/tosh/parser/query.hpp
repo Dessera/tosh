@@ -15,11 +15,11 @@ namespace tosh::parser {
 class ParseQuery
 {
 private:
-  ast::Root::NodePtr _root;
+  ast::Root::Ptr _root;
   std::vector<std::shared_ptr<utils::RedirectOperation>> _redirects;
 
 public:
-  ParseQuery(ast::Root::NodePtr root,
+  ParseQuery(ast::Root::Ptr root,
              std::vector<std::shared_ptr<utils::RedirectOperation>> redirects);
 
   [[nodiscard]] constexpr const auto& ast() const { return *_root; }

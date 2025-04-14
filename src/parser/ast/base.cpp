@@ -1,5 +1,6 @@
 #include "tosh/parser/ast/base.hpp"
 
+#include <list>
 #include <ranges>
 
 namespace tosh::ast {
@@ -10,7 +11,7 @@ Token::Token(TokenType type)
 }
 
 ParseState
-Token::iter_next(char c)
+Token::parse_next(char c)
 {
   auto status = ParseState::CONTINUE;
 
@@ -25,7 +26,7 @@ Token::iter_next(char c)
       continue;
     }
 
-    status = current()->iter_next(c);
+    status = current()->parse_next(c);
 
     if (status == ParseState::END) {
       add(current());
@@ -71,6 +72,13 @@ Token::on_end()
   auto status = current()->on_end();
   current(nullptr);
   return status;
+}
+
+void
+Token::clear()
+{
+  nodes().clear();
+  current(nullptr);
 }
 
 }
