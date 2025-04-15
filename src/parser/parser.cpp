@@ -29,10 +29,23 @@ is_redirect(const tosh::ast::Token& token)
 }
 
 constexpr bool
+is_home(const tosh::ast::Token& token)
+{
+  return token.type() == tosh::ast::TokenType::HOME;
+}
+
+constexpr bool
 is_redirect_expr(const tosh::ast::Token& token)
 {
   return is_redirect(token) ||
          (token.nodes().size() == 1 && is_redirect(*token.nodes().front()));
+}
+
+constexpr auto
+home_to_text(const tosh::ast::Token::Ptr& token)
+{
+  auto ptr = std::static_pointer_cast<tosh::ast::HomeDir>(token);
+  return std::make_shared<tosh::ast::Text>(ptr->home());
 }
 
 }
@@ -77,6 +90,8 @@ try {
     }
   }
   root->parse_next('\0');
+
+  root->replace_all(is_home, home_to_text);
 
   return ParseQuery{ root, make_redirects(root) };
 } catch (const std::exception& e) {

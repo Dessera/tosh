@@ -2,6 +2,7 @@
 #include "tosh/parser/ast/base.hpp"
 #include "tosh/parser/ast/quote.hpp"
 #include "tosh/parser/ast/redirect.hpp"
+#include "tosh/utils/env.hpp"
 
 #include <memory>
 #include <string>
@@ -66,6 +67,46 @@ Text::string() const
   return _str;
 }
 
+HomeDir::HomeDir()
+  : Token(TokenType::HOME)
+{
+}
+
+ParseState
+HomeDir::on_continue(char c)
+{
+  if (c == '/') {
+    _slash = true;
+    return ParseState::END_PASS;
+  }
+
+  if (c == ' ' || c == '\n') {
+    return ParseState::END;
+  }
+
+  return ParseState::INVALID;
+}
+
+std::string
+HomeDir::string() const
+{
+  if (_slash) {
+    return "~/";
+  }
+
+  return "~";
+}
+
+std::string
+HomeDir::home() const
+{
+  auto s = utils::getenv("HOME");
+  if (_slash) {
+    s.append("/");
+  }
+  return s;
+}
+
 Expr::Expr()
   : Token(TokenType::EXPR)
 {
@@ -93,6 +134,11 @@ Expr::on_continue(char c)
     return ParseState::REPEAT;
   }
 
+  if (HomeDir::validate(c)) {
+    current(std::make_shared<HomeDir>());
+    return ParseState::CONTINUE;
+  }
+
   current(std::make_shared<Text>());
   return ParseState::REPEAT;
 }
@@ -108,6 +154,12 @@ Expr::on_invalid(char c)
       return ParseState::END;
     }
 
+    return ParseState::REPEAT;
+  }
+
+  if (current()->type() == TokenType::HOME) {
+    current()->on_end();
+    current(std::make_shared<Text>(current()->string()));
     return ParseState::REPEAT;
   }
 

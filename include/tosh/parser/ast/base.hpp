@@ -22,6 +22,7 @@ enum class TokenType : uint8_t
   TEXT,          // Normal Text
   BACKSLASH,     // Backslash Escape
   QUOTE,         // Any Quote
+  HOME,          // Home (~)
   REDIRECT,      // Redirect
   REDIRECT_SRC,  // Redirect Source
   REDIRECT_OP,   // Redirect Operator
@@ -202,6 +203,26 @@ public:
 
     for (auto& node : nodes()) {
       node->remove_all(f);
+    }
+  }
+
+  /**
+   * @brief Replace all nodes that satisfy the given predicate with the given
+   * replacement
+   *
+   * @param pred Predicate function
+   * @param repl Replacement function
+   */
+  void replace_all(auto&& pred, auto&& repl)
+  {
+    for (auto& node : nodes()) {
+      if (pred(*node)) {
+        node = repl(node);
+      }
+    }
+
+    for (auto& node : nodes()) {
+      node->replace_all(pred, repl);
     }
   }
 };

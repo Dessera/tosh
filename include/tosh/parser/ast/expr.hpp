@@ -31,6 +31,21 @@ public:
   [[nodiscard]] std::string string() const override;
 };
 
+class HomeDir : public Token
+{
+private:
+  bool _slash{ false };
+
+public:
+  constexpr static bool validate(char c) { return c == '~'; }
+
+  HomeDir();
+
+  ParseState on_continue(char c) override;
+  [[nodiscard]] std::string string() const override;
+  [[nodiscard]] std::string home() const;
+};
+
 class Expr : public Token
 {
 public:
