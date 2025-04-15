@@ -128,9 +128,12 @@ Repl::find_command_full(std::string_view command)
   namespace ranges = std::ranges;
   namespace fs = std::filesystem;
 
+  fs::path cmd = command;
+  fs::path cmdpath = utils::remove_home_prefix(cmd);
+
   return utils::get_path_env(command) | views::split(':') |
-         views::transform([&command](const auto& ep) {
-           return fs::path(std::string_view(ep)) / command;
+         views::transform([&cmdpath](const auto& ep) {
+           return fs::path(std::string_view(ep)) / cmdpath;
          }) |
          views::filter([](const auto& p) { return fs::is_regular_file(p); }) |
          views::transform([](const auto& p) { return p.string(); }) |
