@@ -8,7 +8,7 @@
 
 namespace tosh::builtins {
 
-error::Result<void>
+error::Result<int>
 CheckArgs::execute(repl::Repl& /*repl*/, parser::ParseQuery& query)
 {
   auto args = query.args();
@@ -25,7 +25,7 @@ CheckArgs::execute(repl::Repl& /*repl*/, parser::ParseQuery& query)
     std::println("  {}", redirect->data());
   }
 
-  return {};
+  return EXIT_SUCCESS;
 }
 
 }

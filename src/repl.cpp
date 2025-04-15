@@ -101,7 +101,7 @@ Repl::run()
   }
 }
 
-error::Result<void>
+error::Result<int>
 Repl::run_builtin_no_ops(parser::ParseQuery& query, const std::string& name)
 {
 
@@ -112,30 +112,32 @@ Repl::run_builtin_no_ops(parser::ParseQuery& query, const std::string& name)
   return error::err(error::ErrorCode::BUILTIN_NOT_FOUND);
 }
 
-error::Result<void>
+error::Result<int>
 Repl::run_proc(
   parser::ParseQuery& query,
-  const std::function<error::Result<void>(parser::ParseQuery&)>& callback)
+  const std::function<error::Result<int>(parser::ParseQuery&)>& callback)
 {
   if (auto pid = fork(); pid == 0) {
     for (auto& redirect : query.redirects()) {
-      if (auto res = redirect->apply(); !res.has_value()) {
-        res.error().log();
-        std::exit(EXIT_FAILURE);
-      }
+      LOGERR_EXIT(redirect->apply());
     }
     if (auto res = callback(query); !res.has_value()) {
       res.error().log();
       std::exit(EXIT_FAILURE);
     } else {
-      std::exit(EXIT_SUCCESS);
+      std::exit(res.value());
     }
   } else if (pid > 0) {
     _subpid = pid;
-    waitpid(pid, nullptr, 0);
+
+    // NOLINTNEXTLINE
+    int ret;
+    waitpid(pid, &ret, 0);
+    ret = WEXITSTATUS(ret);
+
     _subpid = -1;
 
-    return {};
+    return { ret };
   } else {
     return error::err(error::ErrorCode::BUILTIN_FORK_FAILED);
   }

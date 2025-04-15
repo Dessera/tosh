@@ -7,8 +7,8 @@ namespace tosh::builtins {
 class TOSH_EXPORT Echo : public BaseCommand
 {
 public:
-  error::Result<void> execute(repl::Repl& repl,
-                              parser::ParseQuery& query) override;
+  error::Result<int> execute(repl::Repl& repl,
+                             parser::ParseQuery& query) override;
 };
 
 }

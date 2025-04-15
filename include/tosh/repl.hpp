@@ -36,11 +36,11 @@ public:
    *
    * @param query Arguments to pass to callback
    * @param callback Callback to run in another process
-   * @return error::Result<void> Process result
+   * @return error::Result<int> Process result
    */
-  error::Result<void> run_proc(
+  error::Result<int> run_proc(
     parser::ParseQuery& query,
-    const std::function<error::Result<void>(parser::ParseQuery&)>& callback);
+    const std::function<error::Result<int>(parser::ParseQuery&)>& callback);
 
   /**
    * @brief Get token parser
@@ -66,10 +66,10 @@ public:
    *
    * @param query Arguments to pass to builtin
    * @param name Name of builtin to run
-   * @return error::Result<void> Builtin result
+   * @return error::Result<int> Builtin result
    */
-  error::Result<void> run_builtin_no_ops(parser::ParseQuery& query,
-                                         const std::string& name);
+  error::Result<int> run_builtin_no_ops(parser::ParseQuery& query,
+                                        const std::string& name);
 
   /**
    * @brief Expand command to full path

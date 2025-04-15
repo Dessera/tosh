@@ -17,7 +17,7 @@ namespace fs = std::filesystem;
 
 namespace tosh::builtins {
 
-error::Result<void>
+error::Result<int>
 Cd::execute(repl::Repl& /*repl*/, parser::ParseQuery& query)
 {
   auto args = query.args();
@@ -30,7 +30,8 @@ Cd::execute(repl::Repl& /*repl*/, parser::ParseQuery& query)
 
   if (!fs::is_directory(path)) {
     return error::err(error::ErrorCode::BUILTIN_INVALID_ARGS,
-                      std::format("{} is not a directory", path.string()));
+                      "{} is not a directory",
+                      path.string());
   }
 
   std::error_code ec;
@@ -40,7 +41,7 @@ Cd::execute(repl::Repl& /*repl*/, parser::ParseQuery& query)
     return error::err(error::ErrorCode::UNKNOWN, ec.message());
   }
 
-  return {};
+  return EXIT_SUCCESS;
 }
 
 }

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <expected>
+#include <format>
 #include <string>
 
 // macro to return when an error occurs
@@ -37,10 +38,10 @@ namespace tosh::error {
 
 enum class TOSH_EXPORT ErrorCode : uint8_t
 {
-  BUILTIN_EXEC_FAILED,
-  BUILTIN_FORK_FAILED,
-  BUILTIN_INVALID_ARGS,
-  BUILTIN_NOT_FOUND,
+  BUILTIN_EXEC_FAILED,  // exec failed
+  BUILTIN_FORK_FAILED,  // fork failed
+  BUILTIN_INVALID_ARGS, // invalid arguments
+  BUILTIN_NOT_FOUND,    // builtin not found
 
   REDIRECT_INVALID_SRC,
   REDIRECT_INVALID_DEST,
@@ -72,18 +73,26 @@ public:
 template<typename T>
 using Result = std::expected<T, Error>;
 
-TOSH_EXPORT constexpr auto
+constexpr auto
 err(ErrorCode code, const std::string& message)
 {
   return std::unexpected(Error(code, message));
 }
 
-TOSH_EXPORT constexpr auto
+constexpr auto
 err(ErrorCode code)
 {
   auto errno_copy = errno;
   return std::unexpected(
     Error(code, errno_copy == 0 ? "Unknown error" : std::strerror(errno_copy)));
+}
+
+template<typename... Args>
+constexpr auto
+err(ErrorCode code, std::format_string<Args...> fmt, Args&&... args)
+{
+  return std::unexpected(
+    Error(code, std::format(fmt, std::forward<Args>(args)...)));
 }
 
 }

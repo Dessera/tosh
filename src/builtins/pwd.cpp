@@ -9,10 +9,12 @@
 
 namespace tosh::builtins {
 
-error::Result<void>
+error::Result<int>
 Pwd::execute(repl::Repl& /*repl*/, parser::ParseQuery& /*query*/)
 {
-  std::println("{}", std::filesystem::current_path().string());
-  return {};
+  namespace fs = std::filesystem;
+
+  std::println("{}", fs::current_path().string());
+  return EXIT_SUCCESS;
 }
 }

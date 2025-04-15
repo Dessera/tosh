@@ -22,10 +22,10 @@ public:
    *
    * @param repl the repl instance
    * @param query the query to execute
-   * @return error::Result<void> execution result
+   * @return error::Result<int> execution result
    */
-  virtual error::Result<void> execute(repl::Repl& repl,
-                                      parser::ParseQuery& query) = 0;
+  virtual error::Result<int> execute(repl::Repl& repl,
+                                     parser::ParseQuery& query) = 0;
 };
 
 }

@@ -144,15 +144,11 @@ Expr::on_continue(char c)
 }
 
 ParseState
-Expr::on_invalid(char c)
+Expr::on_invalid(char /*c*/)
 {
   if (current()->type() == TokenType::REDIRECT) {
     current()->on_end();
     current(std::make_shared<Text>(current()->string()));
-
-    if (c == '\n') {
-      return ParseState::END;
-    }
 
     return ParseState::REPEAT;
   }

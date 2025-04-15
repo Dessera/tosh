@@ -5,7 +5,7 @@
 
 namespace tosh::builtins {
 
-error::Result<void>
+error::Result<int>
 Exit::execute(repl::Repl& /*repl*/, parser::ParseQuery& query)
 {
   auto args = query.args();
@@ -21,7 +21,7 @@ Exit::execute(repl::Repl& /*repl*/, parser::ParseQuery& query)
 
   std::exit(status);
 
-  return {};
+  return EXIT_SUCCESS;
 }
 
 }

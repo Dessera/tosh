@@ -9,14 +9,14 @@
 
 namespace tosh::builtins {
 
-error::Result<void>
+error::Result<int>
 Type::execute(repl::Repl& repl, parser::ParseQuery& query)
 {
   auto args = query.args();
 
   if (args.size() == 1) {
-    return error::err(error::ErrorCode::BUILTIN_INVALID_ARGS,
-                      std::format("usage: {} <symbol>", args[0]));
+    std::println("usage: {} <symbol>", args[0]);
+    return EXIT_FAILURE;
   }
 
   for (auto it = args.begin() + 1; it != args.end(); ++it) {
@@ -34,7 +34,7 @@ Type::execute(repl::Repl& repl, parser::ParseQuery& query)
     }
   }
 
-  return {};
+  return EXIT_SUCCESS;
 }
 
 }
