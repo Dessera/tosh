@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tosh/common.hpp"
 #include "tosh/parser/ast/base.hpp"
 
 #include <magic_enum/magic_enum.hpp>
@@ -8,13 +9,19 @@
 
 namespace tosh::ast {
 
-enum QuoteType : char
+enum class TOSH_EXPORT QuoteType : char
 {
   SINGLE = '\'',
   DOUBLE = '"',
 };
 
-class QuoteBackslash : public Token
+constexpr bool
+is_quote(char c)
+{
+  return magic_enum::enum_contains<QuoteType>(c);
+}
+
+class TOSH_EXPORT QuoteBackslash : public Token
 {
 private:
   char _bs_char{};
@@ -29,7 +36,7 @@ public:
   [[nodiscard]] std::string string() const override;
 };
 
-class QuoteText : public Token
+class TOSH_EXPORT QuoteText : public Token
 {
 private:
   std::string _text;
@@ -43,7 +50,7 @@ public:
   [[nodiscard]] std::string string() const override;
 };
 
-class QuoteExpr : public Token
+class TOSH_EXPORT QuoteExpr : public Token
 {
 private:
   QuoteType _quote;

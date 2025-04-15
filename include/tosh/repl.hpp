@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tosh/builtins/base.hpp"
+#include "tosh/common.hpp"
 #include "tosh/error.hpp"
 #include "tosh/parser/parser.hpp"
 #include "tosh/parser/query.hpp"
@@ -15,7 +16,7 @@
 
 namespace tosh::repl {
 
-class Repl
+class TOSH_EXPORT Repl
 {
 private:
   std::map<std::string, std::shared_ptr<builtins::BaseCommand>> _builtins;
@@ -115,6 +116,13 @@ private:
    * @param name Name of builtin to run
    */
   void run_builtin(parser::ParseQuery& query, const std::string& name);
+
+  /**
+   * @brief Get the shell prompt
+   *
+   * @return std::string Shell prompt
+   */
+  std::string get_prompt();
 };
 
 }

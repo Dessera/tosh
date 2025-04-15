@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tosh/common.hpp"
 #include "tosh/parser/ast/base.hpp"
 #include "tosh/parser/ast/expr.hpp"
 #include "tosh/utils/redirect.hpp"
@@ -10,7 +11,7 @@
 
 namespace tosh::ast {
 
-class RedirectSrc : public Token
+class TOSH_EXPORT RedirectSrc : public Token
 {
 private:
   int _src{ 0 };
@@ -29,7 +30,7 @@ public:
   [[nodiscard]] constexpr int to_fd() const { return _src; }
 };
 
-class RedirectOp : public Token
+class TOSH_EXPORT RedirectOp : public Token
 {
 public:
   constexpr static std::array VALID_OPCS = { '<', '>', '&' };
@@ -48,13 +49,13 @@ public:
   [[nodiscard]] utils::RedirectType to_optype() const;
 };
 
-class RedirectDest : public Text
+class TOSH_EXPORT RedirectDest : public Text
 {
 public:
   RedirectDest();
 };
 
-class Redirect : public Token
+class TOSH_EXPORT Redirect : public Token
 {
 private:
   std::shared_ptr<RedirectSrc> _src{ nullptr };

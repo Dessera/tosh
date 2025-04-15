@@ -4,7 +4,7 @@
 
 namespace tosh::builtins {
 
-class Pwd : public BaseCommand
+class TOSH_EXPORT Pwd : public BaseCommand
 {
 public:
   error::Result<void> execute(repl::Repl& repl,

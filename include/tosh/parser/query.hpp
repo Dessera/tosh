@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tosh/common.hpp"
 #include "tosh/parser/ast/root.hpp"
 #include "tosh/utils/redirect.hpp"
 
@@ -12,7 +13,7 @@ namespace tosh::parser {
 /**
  * @brief Parser query result
  */
-class ParseQuery
+class TOSH_EXPORT ParseQuery
 {
 private:
   ast::Root::Ptr _root;

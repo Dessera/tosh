@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tosh/common.hpp"
 #include "tosh/error.hpp"
 #include "tosh/parser/query.hpp"
 
@@ -11,7 +12,7 @@ class Repl;
 
 namespace tosh::builtins {
 
-class BaseCommand
+class TOSH_EXPORT BaseCommand
 {
 public:
   virtual ~BaseCommand() = default;

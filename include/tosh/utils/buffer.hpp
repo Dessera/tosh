@@ -1,13 +1,16 @@
 #pragma once
 
+#include "tosh/common.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <ostream>
 #include <string>
 #include <string_view>
+
 namespace tosh::utils {
 
-enum class CommandType : uint8_t
+enum class TOSH_EXPORT CommandType : uint8_t
 {
   END = 0x04,
   TAB = 0x09,
@@ -25,7 +28,7 @@ enum class CommandType : uint8_t
  * @return true if the character is a command
  * @return false if the character is not a command
  */
-bool
+TOSH_EXPORT bool
 is_command(char c, CommandType type);
 
 /**
@@ -35,10 +38,10 @@ is_command(char c, CommandType type);
  * @return true if the character is a regular ascii character
  * @return false if the character is not a regular ascii character
  */
-bool
+TOSH_EXPORT bool
 is_ascii(char c);
 
-class CommandBuffer
+class TOSH_EXPORT CommandBuffer
 {
 private:
   std::string _buffer;

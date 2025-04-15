@@ -1,10 +1,11 @@
 #pragma once
 
+#include "tosh/common.hpp"
 #include "tosh/parser/ast/base.hpp"
 
 namespace tosh::ast {
 
-class Root : public Token
+class TOSH_EXPORT Root : public Token
 {
 public:
   Root();

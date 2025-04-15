@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tosh/common.hpp"
 #include <filesystem>
 #include <string>
 #include <string_view>
@@ -13,10 +14,10 @@ namespace tosh::utils {
  * @param path Path to check
  * @return std::string Path result
  */
-std::string
+TOSH_EXPORT std::string
 get_path_env(std::string_view path);
 
-std::filesystem::path
+TOSH_EXPORT std::filesystem::path
 remove_home_prefix(const std::filesystem::path& path);
 
 }

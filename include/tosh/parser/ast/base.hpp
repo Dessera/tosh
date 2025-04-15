@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tosh/common.hpp"
+
 #include <magic_enum/magic_enum.hpp>
 
 #include <concepts>
@@ -16,7 +18,7 @@ namespace tosh::ast {
 /**
  * @brief Token Type (used to identify the type of token in runtime)
  */
-enum class TokenType : uint8_t
+enum class TOSH_EXPORT TokenType : uint8_t
 {
   ROOT,          // Token Tree Root
   TEXT,          // Normal Text
@@ -33,7 +35,7 @@ enum class TokenType : uint8_t
 /**
  * @brief Parse State
  */
-enum class ParseState : uint8_t
+enum class TOSH_EXPORT ParseState : uint8_t
 {
   CONTINUE, // Continue parsing
   END,      // End parsing (current char is not complete)
@@ -45,7 +47,7 @@ enum class ParseState : uint8_t
 /**
  * @brief Base class for all AST nodes
  */
-class Token
+class TOSH_EXPORT Token
 {
 public:
   using Ptr = std::shared_ptr<Token>;

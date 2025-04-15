@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tosh/common.hpp"
 #include <cstdint>
 #include <cstring>
 #include <expected>
@@ -34,7 +35,7 @@
 
 namespace tosh::error {
 
-enum class ErrorCode : uint8_t
+enum class TOSH_EXPORT ErrorCode : uint8_t
 {
   BUILTIN_EXEC_FAILED,
   BUILTIN_FORK_FAILED,
@@ -50,7 +51,7 @@ enum class ErrorCode : uint8_t
   UNKNOWN
 };
 
-class Error
+class TOSH_EXPORT Error
 {
 private:
   ErrorCode _code;
@@ -71,13 +72,13 @@ public:
 template<typename T>
 using Result = std::expected<T, Error>;
 
-constexpr auto
+TOSH_EXPORT constexpr auto
 err(ErrorCode code, const std::string& message)
 {
   return std::unexpected(Error(code, message));
 }
 
-constexpr auto
+TOSH_EXPORT constexpr auto
 err(ErrorCode code)
 {
   auto errno_copy = errno;

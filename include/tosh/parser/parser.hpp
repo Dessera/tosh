@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tosh/common.hpp"
 #include "tosh/error.hpp"
 #include "tosh/parser/ast/root.hpp"
 #include "tosh/parser/query.hpp"
@@ -16,7 +17,7 @@ class Repl;
 
 namespace tosh::parser {
 
-class TokenParser
+class TOSH_EXPORT TokenParser
 {
 public:
   /**

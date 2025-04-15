@@ -23,6 +23,26 @@
 #include <unistd.h>
 #include <vector>
 
+namespace {
+
+namespace fs = std::filesystem;
+
+constexpr auto
+cmdpath_fixup(const fs::path& cmd)
+{
+  return [&cmd](const auto& p) {
+    auto cmdcopy = cmd;
+    cmdcopy.replace_filename(p.filename());
+    auto cmdstr = cmdcopy.string();
+    if (fs::is_directory(p) && cmdstr.back() != '/') {
+      cmdstr.append("/");
+    }
+    return cmdstr;
+  };
+}
+
+}
+
 namespace tosh::repl {
 
 Repl::Repl()
@@ -48,7 +68,7 @@ void
 Repl::run()
 {
   while (true) {
-    std::print("$ ");
+    std::print("{}", get_prompt());
 
     auto res = _parser.parse(*this);
     if (!res.has_value()) {
@@ -126,7 +146,6 @@ Repl::find_command_full(std::string_view command)
 {
   namespace views = std::ranges::views;
   namespace ranges = std::ranges;
-  namespace fs = std::filesystem;
 
   fs::path cmd = command;
   fs::path cmdpath = utils::remove_home_prefix(cmd);
@@ -145,7 +164,6 @@ Repl::find_command_fuzzy(std::string_view command)
 {
   namespace views = std::ranges::views;
   namespace ranges = std::ranges;
-  namespace fs = std::filesystem;
 
   fs::path cmd = command;
   fs::path cmdpath = utils::remove_home_prefix(cmd);
@@ -157,18 +175,12 @@ Repl::find_command_fuzzy(std::string_view command)
          views::filter([](const auto& p) { return fs::is_directory(p); }) |
          views::transform(
            [](const auto& p) { return fs::directory_iterator(p); }) |
-         views::join | views::filter([&cmd](const auto& p) {
-           return p.path().filename().string().starts_with(
-             cmd.filename().string());
+         views::join |
+         views::transform([](const auto& p) { return p.path(); }) |
+         views::filter([&cmd](const auto& p) {
+           return p.filename().string().starts_with(cmd.filename().string());
          }) |
-         views::transform([cmd](const auto& p) mutable {
-           cmd.replace_filename(p.path().filename());
-           auto cmdstr = cmd.string();
-           if (p.is_directory()) {
-             cmdstr.append("/");
-           }
-           return cmdstr;
-         }) |
+         views::transform(cmdpath_fixup(cmd)) |
          ranges::to<std::vector<std::string>>();
 }
 
@@ -190,7 +202,7 @@ Repl::find_fuzzy(std::string_view command)
   auto commands = find_command_fuzzy(command);
   auto builtins = find_builtin_fuzzy(command);
 
-  commands.insert(commands.end(), builtins.begin(), builtins.end());
+  builtins.insert(builtins.end(), commands.begin(), commands.end());
 
   return commands;
 }
@@ -237,6 +249,12 @@ Repl::run_builtin(parser::ParseQuery& query, const std::string& name)
       res.error().log();
     }
   }
+}
+
+std::string
+Repl::get_prompt()
+{
+  return "$ ";
 }
 
 }

@@ -5,47 +5,29 @@ project(
   default_options: ['warning_level=3', 'cpp_std=gnu++26'],
 )
 
-libmagic_enum_proj = subproject('magic_enum')
-libmagic_enum_dep = libmagic_enum_proj.get_variable('magic_enum_dep')
+magic_enum_proj = subproject('magic_enum')
+magic_enum_dep = magic_enum_proj.get_variable('magic_enum_dep')
 
-lib_src = files(
-  'src/builtins/cd.cpp',
-  'src/builtins/check_args.cpp',
-  'src/builtins/echo.cpp',
-  'src/builtins/exec.cpp',
-  'src/builtins/exit.cpp',
-  'src/builtins/pwd.cpp',
-  'src/builtins/type.cpp',
-  'src/error.cpp',
-  'src/parser/ast/base.cpp',
-  'src/parser/ast/expr.cpp',
-  'src/parser/ast/quote.cpp',
-  'src/parser/ast/redirect.cpp',
-  'src/parser/ast/root.cpp',
-  'src/parser/parser.cpp',
-  'src/parser/query.cpp',
-  'src/repl.cpp',
-  'src/utils/buffer.cpp',
-  'src/utils/path.cpp',
-  'src/utils/redirect.cpp',
-)
+subdir('src')
+
 lib_inc = include_directories('include')
-
-install_subdir('include/tosh', install_dir: 'include')
 
 shlib = shared_library(
   'tosh',
   lib_src,
-  dependencies: [libmagic_enum_dep],
+  dependencies: [magic_enum_dep],
   include_directories: lib_inc,
+  gnu_symbol_visibility: 'hidden',
   install: true,
 )
 
-dep_tosh_shared = declare_dependency(include_directories: lib_inc, link_with: shlib)
+install_subdir('include/tosh', install_dir: 'include')
+
+tosh_dep = declare_dependency(include_directories: lib_inc, link_with: shlib)
 
 inc = include_directories('include')
 src = files('src/main.cpp')
-deps = [dep_tosh_shared, libmagic_enum_dep]
+deps = [tosh_dep, magic_enum_dep]
 
 exe = executable(
   'tosh',
