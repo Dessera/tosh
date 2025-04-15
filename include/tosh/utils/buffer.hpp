@@ -51,11 +51,6 @@ public:
   ~CommandBuffer();
 
   /**
-   * @brief Clear the buffer
-   */
-  void clear();
-
-  /**
    * @brief Insert a character at the cursor position
    *
    * @param c The character to insert

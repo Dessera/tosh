@@ -144,7 +144,8 @@ Repl::find_command_fuzzy(std::string_view command)
   namespace ranges = std::ranges;
   namespace fs = std::filesystem;
 
-  fs::path cmdpath{ command };
+  fs::path cmd = command;
+  fs::path cmdpath = utils::remove_home_prefix(cmd);
 
   return utils::get_path_env(command) | views::split(':') |
          views::transform([&cmdpath](const auto& ep) {
@@ -153,14 +154,13 @@ Repl::find_command_fuzzy(std::string_view command)
          views::filter([](const auto& p) { return fs::is_directory(p); }) |
          views::transform(
            [](const auto& p) { return fs::directory_iterator(p); }) |
-         views::join | views::filter([&cmdpath](const auto& p) {
+         views::join | views::filter([&cmd](const auto& p) {
            return p.path().filename().string().starts_with(
-             cmdpath.filename().string());
+             cmd.filename().string());
          }) |
-         views::transform([&cmdpath](const auto& p) {
-           auto cmdcopy = cmdpath;
-           cmdcopy.replace_filename(p.path().filename());
-           auto cmdstr = cmdcopy.string();
+         views::transform([cmd](const auto& p) mutable {
+           cmd.replace_filename(p.path().filename());
+           auto cmdstr = cmd.string();
            if (p.is_directory()) {
              cmdstr.append("/");
            }
