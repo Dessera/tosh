@@ -17,9 +17,24 @@ enum class CommandType : uint8_t
   BACKSPACE = 0x7f,
 };
 
+/**
+ * @brief Check if a character is a command
+ *
+ * @param c The character to check
+ * @param type The type of command to check
+ * @return true if the character is a command
+ * @return false if the character is not a command
+ */
 bool
 is_command(char c, CommandType type);
 
+/**
+ * @brief Check if a character is a regular ascii character (from ' ' to '~')
+ *
+ * @param c The character to check
+ * @return true if the character is a regular ascii character
+ * @return false if the character is not a regular ascii character
+ */
 bool
 is_ascii(char c);
 
@@ -47,6 +62,11 @@ public:
    */
   void insert(char c);
 
+  /**
+   * @brief Insert a string at the cursor position
+   *
+   * @param str The string to insert
+   */
   void insert(std::string_view str);
 
   /**
@@ -80,6 +100,11 @@ public:
    */
   size_t forward();
 
+  /**
+   * @brief Get the character from stdin
+   *
+   * @return char The character read
+   */
   [[nodiscard]] char getchar();
 
   /**
@@ -88,21 +113,58 @@ public:
    * @return constexpr std::string The buffer content
    */
   [[nodiscard]] constexpr auto& string() const { return _buffer; }
+
+  /**
+   * @brief Get the buffer content
+   *
+   * @return constexpr auto& The buffer content
+   */
   [[nodiscard]] constexpr auto& string() { return _buffer; }
+
+  /**
+   * @brief Get the buffer size
+   *
+   * @return constexpr auto The buffer size
+   */
   [[nodiscard]] constexpr auto size() const { return _buffer.size(); }
 
+  /**
+   * @brief Get the buffer content from a given position
+   *
+   * @param start The position to start from
+   * @return constexpr std::string_view The buffer content from the given
+   * position
+   */
   [[nodiscard]] constexpr std::string_view string_from(size_t start) const
   {
     // NOLINTNEXTLINE
     return { _buffer.c_str() + start, _buffer.size() - start };
   }
 
+  /**
+   * @brief Get the cursor position
+   *
+   * @return constexpr auto The cursor position
+   */
   [[nodiscard]] constexpr auto cursor() const { return _cursor; }
 
+  /**
+   * @brief Check if the cursor is at the end of the buffer
+   *
+   * @return true if the cursor is at the end of the buffer
+   * @return false if the cursor is not at the end of the buffer
+   */
   [[nodiscard]] constexpr bool end() const { return _cursor == _buffer.size(); }
 
 private:
+  /**
+   * @brief Enable stdin raw mode
+   */
   void enable_raw_mode();
+
+  /**
+   * @brief Disable stdin raw mode
+   */
   void disable_raw_mode();
 };
 

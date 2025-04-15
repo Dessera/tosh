@@ -11,8 +11,8 @@ class Singleton
 public:
   static T& instance()
   {
-    static T instance;
-    return instance;
+    static T _instance;
+    return _instance;
   }
 };
 

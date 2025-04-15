@@ -16,6 +16,13 @@ class BaseCommand
 public:
   virtual ~BaseCommand() = default;
 
+  /**
+   * @brief Execute the builtin command
+   *
+   * @param repl the repl instance
+   * @param query the query to execute
+   * @return error::Result<void> execution result
+   */
   virtual error::Result<void> execute(repl::Repl& repl,
                                       parser::ParseQuery& query) = 0;
 };

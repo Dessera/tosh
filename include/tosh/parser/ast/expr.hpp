@@ -26,7 +26,6 @@ private:
 public:
   Text();
   Text(std::string str);
-  // Text(std::string_view str);
 
   ParseState on_continue(char c) override;
   [[nodiscard]] std::string string() const override;

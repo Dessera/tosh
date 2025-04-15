@@ -4,6 +4,9 @@
 #include "tosh/parser/ast/root.hpp"
 #include "tosh/parser/query.hpp"
 #include "tosh/utils/buffer.hpp"
+#include "tosh/utils/redirect.hpp"
+#include <memory>
+#include <vector>
 
 namespace tosh::repl {
 
@@ -44,6 +47,24 @@ private:
    * @param buffer The command buffer
    */
   void handle_rebuild_ast(ast::Root::Ptr& root, utils::CommandBuffer& buffer);
+
+  /**
+   * @brief Handles the end of the input
+   *
+   * @param root The root node of the AST
+   * @param buffer The command buffer
+   */
+  void handle_cin_eof(ast::Root::Ptr& root, utils::CommandBuffer& buffer);
+
+  /**
+   * @brief Creates the redirects from the AST
+   *
+   * @param root The root node of the AST
+   * @return std::vector<std::shared_ptr<utils::RedirectOperation>> Redirect
+   * operations
+   */
+  std::vector<std::shared_ptr<utils::RedirectOperation>> make_redirects(
+    ast::Root::Ptr& root);
 };
 
 }
