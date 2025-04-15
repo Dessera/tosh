@@ -26,6 +26,7 @@ lib_src = files(
   'src/parser/query.cpp',
   'src/repl.cpp',
   'src/utils/buffer.cpp',
+  'src/utils/path.cpp',
   'src/utils/redirect.cpp',
 )
 lib_inc = include_directories('include')

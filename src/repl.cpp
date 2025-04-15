@@ -9,7 +9,7 @@
 #include "tosh/builtins/type.hpp"
 #include "tosh/error.hpp"
 #include "tosh/parser/parser.hpp"
-#include "tosh/utils/env.hpp"
+#include "tosh/utils/path.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -128,13 +128,9 @@ Repl::find_command_full(std::string_view command)
   namespace ranges = std::ranges;
   namespace fs = std::filesystem;
 
-  auto envpath = command.starts_with(".") || command.starts_with("..")
-                   ? fs::current_path().string()
-                   : utils::getenv("PATH");
-
-  return envpath | views::split(':') |
+  return utils::get_path_env(command) | views::split(':') |
          views::transform([&command](const auto& ep) {
-           return fs::path(std::string(ep.begin(), ep.end())) / command;
+           return fs::path(std::string_view(ep)) / command;
          }) |
          views::filter([](const auto& p) { return fs::is_regular_file(p); }) |
          views::transform([](const auto& p) { return p.string(); }) |
@@ -148,18 +144,28 @@ Repl::find_command_fuzzy(std::string_view command)
   namespace ranges = std::ranges;
   namespace fs = std::filesystem;
 
-  return utils::getenv("PATH") | views::split(':') |
-         views::transform([](const auto& ep) {
-           return fs::path(std::string(ep.begin(), ep.end()));
+  fs::path cmdpath{ command };
+
+  return utils::get_path_env(command) | views::split(':') |
+         views::transform([&cmdpath](const auto& ep) {
+           return (fs::path(std::string_view(ep)) / cmdpath).parent_path();
          }) |
          views::filter([](const auto& p) { return fs::is_directory(p); }) |
          views::transform(
            [](const auto& p) { return fs::directory_iterator(p); }) |
-         views::join | views::filter([&command](const auto& p) {
-           return p.path().filename().string().starts_with(command);
+         views::join | views::filter([&cmdpath](const auto& p) {
+           return p.path().filename().string().starts_with(
+             cmdpath.filename().string());
          }) |
-         views::transform(
-           [](const auto& p) { return p.path().filename().string(); }) |
+         views::transform([&cmdpath](const auto& p) {
+           auto cmdcopy = cmdpath;
+           cmdcopy.replace_filename(p.path().filename());
+           auto cmdstr = cmdcopy.string();
+           if (p.is_directory()) {
+             cmdstr.append("/");
+           }
+           return cmdstr;
+         }) |
          ranges::to<std::vector<std::string>>();
 }
 

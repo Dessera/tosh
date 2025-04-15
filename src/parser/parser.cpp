@@ -45,7 +45,7 @@ try {
   namespace views = std::ranges::views;
   namespace ranges = std::ranges;
 
-  auto root = std::make_shared<ast::Root>();
+  ast::Root::Ptr root = std::make_shared<ast::Root>();
   auto buffer = utils::CommandBuffer{ std::cout };
 
   while (true) {
@@ -53,12 +53,8 @@ try {
 
     if (utils::is_ascii(c) ||
         utils::is_command(c, utils::CommandType::NEXT_LINE)) {
-      // Insert character, need rebuild AST if not at the end of buffer
       if (!buffer.end()) {
-        root->clear();
-        for (auto c : buffer.string()) {
-          root->parse_next(c);
-        }
+        handle_rebuild_ast(root, buffer);
         continue;
       }
 
@@ -68,23 +64,13 @@ try {
     }
 
     if (utils::is_command(c, utils::CommandType::BACKSPACE)) {
-      root->clear();
-      for (auto c : buffer.string()) {
-        root->parse_next(c);
-      }
+      handle_rebuild_ast(root, buffer);
       continue;
     }
 
     if (utils::is_command(c, utils::CommandType::TAB) &&
         root->current() != nullptr) {
-      root->current()->parse_next('\0');
-      auto curr = root->current()->string();
-      auto res = repl.find_fuzzy(curr);
-      if (!res.empty()) {
-        auto s = res.front().substr(curr.size());
-        buffer.insert(s);
-        root->current()->current(std::make_shared<ast::Text>(s));
-      }
+      handle_completion(repl, root, buffer);
     }
 
     if (utils::is_command(c, utils::CommandType::END) && root->empty()) {
@@ -109,6 +95,34 @@ try {
   return ParseQuery{ root, redirects };
 } catch (const std::exception& e) {
   return error::err(error::ErrorCode::UNKNOWN, e.what());
+}
+
+void
+TokenParser::handle_completion(repl::Repl& repl,
+                               ast::Root::Ptr& root,
+                               utils::CommandBuffer& buffer)
+{
+  // end current token
+  root->current()->parse_next('\0');
+
+  auto curr = root->current()->string();
+  auto res = repl.find_fuzzy(curr);
+
+  if (!res.empty() && res.front().size() > curr.size()) {
+    auto s = res.front().substr(curr.size());
+    buffer.insert(s);
+    root->current()->current(std::make_shared<ast::Text>(s));
+  }
+}
+
+void
+TokenParser::handle_rebuild_ast(ast::Root::Ptr& root,
+                                utils::CommandBuffer& buffer)
+{
+  root->clear();
+  for (auto c : buffer.string()) {
+    root->parse_next(c);
+  }
 }
 
 }
