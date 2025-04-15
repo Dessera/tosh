@@ -49,6 +49,8 @@ enum class TOSH_EXPORT ErrorCode : uint8_t
 
   PARSER_SYNTAX_ERROR,
 
+  ENV_INVALID,
+
   UNKNOWN
 };
 

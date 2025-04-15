@@ -3,6 +3,7 @@
 #include "tosh/builtins/cd.hpp"
 #include "tosh/builtins/check_args.hpp"
 #include "tosh/builtins/echo.hpp"
+#include "tosh/builtins/env.hpp"
 #include "tosh/builtins/exec.hpp"
 #include "tosh/builtins/exit.hpp"
 #include "tosh/builtins/pwd.hpp"
@@ -58,7 +59,11 @@ Repl::Repl()
         { "pwd", std::shared_ptr<builtins::BaseCommand>(new builtins::Pwd()) },
         { "cd", std::shared_ptr<builtins::BaseCommand>(new builtins::Cd()) },
         { "exec",
-          std::shared_ptr<builtins::BaseCommand>(new builtins::Exec()) } })
+          std::shared_ptr<builtins::BaseCommand>(new builtins::Exec()) },
+        { "sete",
+          std::shared_ptr<builtins::BaseCommand>(new builtins::Sete()) },
+        { "unsete",
+          std::shared_ptr<builtins::BaseCommand>(new builtins::Unsete()) } })
 {
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
@@ -206,7 +211,7 @@ Repl::find_fuzzy(std::string_view command)
 
   builtins.insert(builtins.end(), commands.begin(), commands.end());
 
-  return commands;
+  return builtins;
 }
 
 void
