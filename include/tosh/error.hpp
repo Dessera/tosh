@@ -3,19 +3,19 @@
 #include "tosh/common.hpp"
 #include <cstdint>
 #include <cstring>
+#include <exception>
 #include <expected>
 #include <format>
 #include <string>
 
 // macro to return when an error occurs
 #define RETERR(expr)                                                           \
-  ({                                                                           \
+  {                                                                            \
     auto _ret = (expr);                                                        \
     if (!_ret.has_value()) {                                                   \
       return std::unexpected(_ret.error());                                    \
     }                                                                          \
-    _ret.value();                                                              \
-  })
+  }
 
 #define LOGERR(expr)                                                           \
   {                                                                            \
@@ -51,10 +51,12 @@ enum class TOSH_EXPORT ErrorCode : uint8_t
 
   ENV_INVALID,
 
+  UNEXPECTED_IO_STATUS,
+
   UNKNOWN
 };
 
-class TOSH_EXPORT Error
+class TOSH_EXPORT Error : public std::exception
 {
 private:
   ErrorCode _code;
@@ -70,6 +72,10 @@ public:
   }
 
   void log() const;
+  [[nodiscard]] const char* what() const noexcept override
+  {
+    return _msg.c_str();
+  }
 };
 
 template<typename T>

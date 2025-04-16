@@ -29,7 +29,7 @@ inc = include_directories('include')
 src = files('src/main.cpp')
 deps = [tosh_dep, magic_enum_dep]
 
-exe = executable(
+executable(
   'tosh',
   src,
   include_directories: inc,
@@ -37,7 +37,8 @@ exe = executable(
   install: true,
 )
 
-test('tosh', exe)
+# test('tosh', exe)
+subdir('tests')
 
 libs = [shlib]
 

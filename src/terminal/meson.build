@@ -1,0 +1,1 @@
+terminal_src = files('ansi.cpp', 'cursor.cpp', 'document.cpp')

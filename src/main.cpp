@@ -1,4 +1,5 @@
 #include <csignal>
+#include <cstdio>
 #include <print>
 #include <tosh/repl.hpp>
 #include <tosh/utils/singleton.hpp>
