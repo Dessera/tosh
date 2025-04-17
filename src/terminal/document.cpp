@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <numeric>
 #include <ranges>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -29,14 +30,21 @@ Document::insert(char c)
 
   RETERR(_term.putc(c));
   auto fcur = UNWRAPERR(_term.cursor());
-  auto vcursor = get_vcursor_from_pos(_cursor);
+  if (fcur.x() >= _wsize.x()) {
+    fcur.x() = 0;
+    fcur.y()++;
+  }
 
-  ANSIHideGuard hide(_term);
+  auto vcur = get_vcursor_from_pos(_cursor);
 
-  RETERR(_term.up(vcursor.y() - 1, true));
+  // ANSIHideGuard hide(_term);
+
+  RETERR(_term.up(vcur.y(), true));
   RETERR(_term.forward(_prompt.size()));
 
+  RETERR(_term.clean(CleanType::TOEND));
   RETERR(_term.puts(_buffer));
+
   RETERR(_term.cursor(fcur));
 
   return {};
@@ -47,15 +55,72 @@ Document::backward(std::size_t n)
 {
   assert(_cursor <= _buffer.size());
 
-  auto vcursor = get_vcursor_from_pos(_cursor);
+  auto vcur = get_vcursor_from_pos(_cursor);
 
-  ANSIHideGuard hide(_term);
+  // ANSIHideGuard hide(_term);
 
-  RETERR(_term.up(vcursor.y() - 1, true));
+  RETERR(_term.up(vcur.y(), true));
   RETERR(_term.forward(_prompt.size()));
 
   _cursor = _cursor < n ? 0 : _cursor - n;
   RETERR(_term.puts(_buffer.substr(0, _cursor)));
+
+  return {};
+}
+
+error::Result<void>
+Document::forward(std::size_t n)
+{
+  assert(_cursor <= _buffer.size());
+
+  auto vcur = get_vcursor_from_pos(_cursor);
+
+  ANSIHideGuard hide(_term);
+
+  RETERR(_term.up(vcur.y(), true));
+  RETERR(_term.forward(_prompt.size()));
+
+  _cursor = _cursor > _buffer.size() - n ? _buffer.size() : _cursor + n;
+  RETERR(_term.puts(_buffer.substr(0, _cursor)));
+
+  return {};
+}
+
+error::Result<void>
+Document::enter()
+{
+  RETERR(_term.enable());
+
+  auto _ = _term.puts(_prompt);
+
+  _buffer.clear();
+  _cursor = 0;
+
+  return {};
+}
+
+error::Result<void>
+Document::leave()
+{
+  auto _ = _term.putc('\n');
+
+  RETERR(_term.disable());
+
+  return {};
+}
+
+error::Result<void>
+Document::resize(const TermCursor& size)
+{
+  auto vcur = get_vcursor_from_pos(_cursor);
+
+  RETERR(_term.up(vcur.y(), true));
+  RETERR(_term.forward(_prompt.size()));
+
+  RETERR(_term.puts(_buffer));
+  auto _ = _term.cleanline(CleanType::TOEND);
+
+  _wsize = size;
 
   return {};
 }
@@ -73,15 +138,24 @@ Document::get_vcursor_from_pos(std::size_t pos)
     }) |
     ranges::to<std::vector<std::pair<size_t, size_t>>>();
 
-  auto y = std::transform_reduce(
-    res.begin(), res.end(), res.size(), std::plus(), [](const auto& p) {
-      return p.first;
-    });
+  assert(!res.empty());
+
+  // prompt fixup
+  auto& front = res.front();
+  front.second += _prompt.size() - 1;
+  if (front.second >= _wsize.x()) {
+    front.first += front.second / _wsize.x();
+    front.second = front.second % _wsize.x();
+  }
+
+  auto y = std::transform_reduce(res.begin(),
+                                 res.end(),
+                                 res.size(),
+                                 std::plus(),
+                                 [](const auto& p) { return p.first; }) -
+           1;
 
   auto x = res.back().second;
-  if (y > 1) {
-    x += _prompt.size();
-  }
 
   return { x, y };
 }

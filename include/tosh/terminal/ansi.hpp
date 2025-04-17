@@ -5,10 +5,19 @@
 #include "tosh/terminal/cursor.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <format>
+#include <string_view>
 
 namespace tosh::terminal {
+
+enum class CleanType : uint8_t
+{
+  TOEND,
+  TOBEGIN,
+  ALL
+};
 
 class TOSH_EXPORT ANSIPort
 {
@@ -60,11 +69,12 @@ public:
   error::Result<void> show();
 
   /**
-   * @brief Clear the current line from the cursor to the end of the line
+   * @brief Clear the current line
    *
    * @return error::Result<void> Operation result
    */
-  error::Result<void> clear_eol();
+  error::Result<void> cleanline(CleanType type = CleanType::ALL);
+  error::Result<void> clean(CleanType type = CleanType::ALL);
 
   /**
    * @brief Print a character to the terminal
@@ -74,6 +84,7 @@ public:
    */
   error::Result<void> putc(char c);
   error::Result<void> puts(const std::string& str);
+  error::Result<void> puts(std::string_view str);
 
   /**
    * @brief Print a formatted string to the terminal

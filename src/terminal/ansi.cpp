@@ -145,9 +145,29 @@ ANSIPort::show()
 }
 
 error::Result<void>
-ANSIPort::clear_eol()
+ANSIPort::cleanline(CleanType type)
 {
-  return print("\x1b[K");
+  switch (type) {
+    case CleanType::TOEND:
+      return print("\x1b[K");
+    case CleanType::TOBEGIN:
+      return print("\x1b[1K");
+    case CleanType::ALL:
+      return print("\x1b[2K");
+  }
+}
+
+error::Result<void>
+ANSIPort::clean(CleanType type)
+{
+  switch (type) {
+    case CleanType::TOEND:
+      return print("\x1b[0J");
+    case CleanType::TOBEGIN:
+      return print("\x1b[1J");
+    case CleanType::ALL:
+      return print("\x1b[2J");
+  }
 }
 
 error::Result<void>
@@ -163,6 +183,15 @@ error::Result<void>
 ANSIPort::puts(const std::string& str)
 {
   if (std::fputs(str.c_str(), _out) == EOF) {
+    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  }
+  return {};
+}
+
+error::Result<void>
+ANSIPort::puts(std::string_view str)
+{
+  if (std::fwrite(str.data(), str.size(), 1, _out) == 0) {
     return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
   }
   return {};

@@ -35,6 +35,23 @@ public:
 
   error::Result<void> insert(char c);
   error::Result<void> backward(std::size_t n = 1);
+  error::Result<void> forward(std::size_t n = 1);
+
+  /**
+   * @brief Start a new command
+   *
+   * @return error::Result<void> Operation result
+   */
+  error::Result<void> enter();
+
+  /**
+   * @brief End the current command
+   *
+   * @return error::Result<void> Operation result
+   */
+  error::Result<void> leave();
+
+  error::Result<void> resize(const TermCursor& size);
 
 private:
   TermCursor get_vcursor_from_pos(std::size_t pos);

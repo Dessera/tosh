@@ -10,10 +10,12 @@ main()
 
   Document doc{ stdout, stdin, "$ " };
 
+  auto _ = doc.enter();
+
   char c = std::getchar();
   while (true) {
 
-    if (c >= ' ' && c <= '~') {
+    if ((c >= ' ' && c <= '~') || c == '\n') {
       doc.insert(c);
     }
 
@@ -24,6 +26,8 @@ main()
         c = std::getchar();
         if (c == 'D') {
           doc.backward();
+        } else if (c == 'C') {
+          doc.forward();
         } else {
           continue;
         }
@@ -34,4 +38,6 @@ main()
 
     c = std::getchar();
   }
+
+  auto _ = doc.leave();
 }
