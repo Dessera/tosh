@@ -1,6 +1,7 @@
 #include "tosh/terminal/ansi.hpp"
 #include "tosh/terminal/document.hpp"
 #include <cstdio>
+#include <iostream>
 
 int
 main()
@@ -14,7 +15,6 @@ main()
 
   char c = std::getchar();
   while (true) {
-
     if ((c >= ' ' && c <= '~') || c == '\n') {
       doc.insert(c);
     }

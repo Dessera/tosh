@@ -7,7 +7,6 @@
 #include <cstddef>
 #include <numeric>
 #include <ranges>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -29,18 +28,18 @@ Document::insert(char c)
   _cursor++;
 
   RETERR(_term.putc(c));
+
   auto fcur = UNWRAPERR(_term.cursor());
-  if (fcur.x() >= _wsize.x()) {
-    fcur.x() = 0;
-    fcur.y()++;
-  }
+  cursor_fixup(fcur);
+
+  RETERR(_term.cursor(fcur));
 
   auto vcur = get_vcursor_from_pos(_cursor);
 
-  // ANSIHideGuard hide(_term);
+  ANSIHideGuard hide(_term);
 
   RETERR(_term.up(vcur.y(), true));
-  RETERR(_term.forward(_prompt.size()));
+  RETERR(_term.puts(_prompt));
 
   RETERR(_term.clean(CleanType::TOEND));
   RETERR(_term.puts(_buffer));
@@ -57,13 +56,18 @@ Document::backward(std::size_t n)
 
   auto vcur = get_vcursor_from_pos(_cursor);
 
-  // ANSIHideGuard hide(_term);
+  ANSIHideGuard hide(_term);
 
   RETERR(_term.up(vcur.y(), true));
   RETERR(_term.forward(_prompt.size()));
 
   _cursor = _cursor < n ? 0 : _cursor - n;
   RETERR(_term.puts(_buffer.substr(0, _cursor)));
+
+  auto pcur = UNWRAPERR(_term.cursor());
+  cursor_fixup(pcur);
+
+  RETERR(_term.cursor(pcur));
 
   return {};
 }
@@ -80,8 +84,13 @@ Document::forward(std::size_t n)
   RETERR(_term.up(vcur.y(), true));
   RETERR(_term.forward(_prompt.size()));
 
-  _cursor = _cursor > _buffer.size() - n ? _buffer.size() : _cursor + n;
+  _cursor = _cursor + n > _buffer.size() ? _buffer.size() : _cursor + n;
   RETERR(_term.puts(_buffer.substr(0, _cursor)));
+
+  auto pcur = UNWRAPERR(_term.cursor());
+  cursor_fixup(pcur);
+
+  RETERR(_term.cursor(pcur));
 
   return {};
 }
@@ -138,11 +147,13 @@ Document::get_vcursor_from_pos(std::size_t pos)
     }) |
     ranges::to<std::vector<std::pair<size_t, size_t>>>();
 
-  assert(!res.empty());
+  if (res.empty()) {
+    res.emplace_back(0, 0);
+  };
 
   // prompt fixup
   auto& front = res.front();
-  front.second += _prompt.size() - 1;
+  front.second += _prompt.size();
   if (front.second >= _wsize.x()) {
     front.first += front.second / _wsize.x();
     front.second = front.second % _wsize.x();
@@ -158,6 +169,15 @@ Document::get_vcursor_from_pos(std::size_t pos)
   auto x = res.back().second;
 
   return { x, y };
+}
+
+void
+Document::cursor_fixup(TermCursor& pos)
+{
+  if (pos.x() >= _wsize.x()) {
+    pos.y() += pos.x() / _wsize.x();
+    pos.x() = pos.x() % _wsize.x();
+  }
 }
 
 }

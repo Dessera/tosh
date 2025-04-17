@@ -118,6 +118,12 @@ public:
    * @return error::Result<void> Operation result
    */
   error::Result<void> disable();
+
+private:
+  error::Result<void> putc_impl(char c);
+  error::Result<void> puts_impl(const std::string& str);
+  error::Result<void> puts_impl(std::string_view str);
+  // error::Result<void>
 };
 
 class TOSH_EXPORT ANSIHideGuard

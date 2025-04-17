@@ -55,6 +55,7 @@ public:
 
 private:
   TermCursor get_vcursor_from_pos(std::size_t pos);
+  void cursor_fixup(TermCursor& pos);
 };
 
 }

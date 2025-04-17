@@ -19,13 +19,13 @@ ANSIPort::ANSIPort(std::FILE* out, std::FILE* in)
   assert(out != nullptr);
   assert(in != nullptr);
 
-  setvbuf(_in, nullptr, _IONBF, 0);
+  // setvbuf(_in, nullptr, _IONBF, 0);
   setvbuf(_out, nullptr, _IONBF, 0);
 }
 
 ANSIPort::~ANSIPort()
 {
-  setvbuf(_in, nullptr, _IOLBF, BUFSIZ);
+  // setvbuf(_in, nullptr, _IOLBF, BUFSIZ);
   setvbuf(_out, nullptr, _IOLBF, BUFSIZ);
 }
 
@@ -154,6 +154,8 @@ ANSIPort::cleanline(CleanType type)
       return print("\x1b[1K");
     case CleanType::ALL:
       return print("\x1b[2K");
+    default:
+      return {};
   }
 }
 
@@ -167,6 +169,8 @@ ANSIPort::clean(CleanType type)
       return print("\x1b[1J");
     case CleanType::ALL:
       return print("\x1b[2J");
+    default:
+      return {};
   }
 }
 
