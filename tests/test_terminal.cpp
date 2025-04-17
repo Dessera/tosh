@@ -10,10 +10,11 @@ main()
   using tosh::terminal::Document;
 
   Document doc{ stdout, stdin, "$ " };
+  auto& term = doc.terminal();
 
   auto _ = doc.enter();
 
-  char c = std::getchar();
+  char c = term.getchar();
   while (true) {
     if ((c >= ' ' && c <= '~') || c == '\n') {
       doc.insert(c);
@@ -21,9 +22,9 @@ main()
 
     if (c == '\x1b') {
       // ESC
-      c = std::getchar();
+      c = term.getchar();
       if (c == '[') {
-        c = std::getchar();
+        c = term.getchar();
         if (c == 'D') {
           doc.backward();
         } else if (c == 'C') {
@@ -36,7 +37,7 @@ main()
       }
     }
 
-    c = std::getchar();
+    c = term.getchar();
   }
 
   auto _ = doc.leave();

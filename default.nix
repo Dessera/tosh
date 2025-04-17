@@ -6,6 +6,9 @@
   meson,
   ninja,
   pkg-config,
+
+  # dependencies
+  libevent,
 }:
 stdenv.mkDerivation {
   name = "tosh";
@@ -16,4 +19,6 @@ stdenv.mkDerivation {
     ninja
     pkg-config
   ];
+
+  buildInputs = [ libevent ];
 }

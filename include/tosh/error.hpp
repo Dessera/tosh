@@ -58,6 +58,7 @@ enum class TOSH_EXPORT ErrorCode : uint8_t
   ENV_INVALID,
 
   UNEXPECTED_IO_STATUS,
+  EVENT_LOOP_FAILED,
 
   UNKNOWN
 };

@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <format>
+#include <mutex>
 #include <string_view>
 
 namespace tosh::terminal {
@@ -24,6 +25,8 @@ class TOSH_EXPORT ANSIPort
 private:
   std::FILE* _out;
   std::FILE* _in;
+
+  std::mutex _mutex;
 
 public:
   ANSIPort(std::FILE* out, std::FILE* in);
@@ -42,6 +45,12 @@ public:
    * @return error::Result<TermCursor> Terminal size
    */
   error::Result<TermCursor> winsize();
+
+  /**
+   * @brief Get the terminal size
+   *
+   * @return TermCursor Terminal size
+   */
   TermCursor unsafe_winsize();
 
   /**
@@ -61,11 +70,44 @@ public:
    * @return error::Result<void> Operation result
    */
   error::Result<void> up(std::size_t n = 1, bool set_to_start = false);
+
+  /**
+   * @brief Move the cursor down, optionally redirecting to the start of the
+   *
+   * @param n Number of lines to move down
+   * @param set_to_start Whether to redirect to the start of the line
+   * @return error::Result<void> Operation result
+   */
   error::Result<void> down(std::size_t n = 1, bool set_to_start = false);
+
+  /**
+   * @brief Move the cursor left, optionally redirecting to the end of the
+   *
+   * @param n Number of lines to move left
+   * @return error::Result<void> Operation result
+   */
   error::Result<void> backward(std::size_t n = 1);
+
+  /**
+   * @brief Move the cursor right, optionally redirecting to the end of the
+   *
+   * @param n Number of lines to move right
+   * @return error::Result<void> Operation result
+   */
   error::Result<void> forward(std::size_t n = 1);
 
+  /**
+   * @brief Hide the cursor
+   *
+   * @return error::Result<void> Operation result
+   */
   error::Result<void> hide();
+
+  /**
+   * @brief Show the cursor
+   *
+   * @return error::Result<void> Operation result
+   */
   error::Result<void> show();
 
   /**
@@ -74,6 +116,13 @@ public:
    * @return error::Result<void> Operation result
    */
   error::Result<void> cleanline(CleanType type = CleanType::ALL);
+
+  /**
+   * @brief Clear the terminal
+   *
+   * @param type Clear type
+   * @return error::Result<void> Operation result
+   */
   error::Result<void> clean(CleanType type = CleanType::ALL);
 
   /**
@@ -83,7 +132,13 @@ public:
    * @return error::Result<void> Operation result
    */
   error::Result<void> putc(char c);
-  error::Result<void> puts(const std::string& str);
+
+  /**
+   * @brief Print a string to the terminal
+   *
+   * @param str String to print
+   * @return error::Result<void> Operation result
+   */
   error::Result<void> puts(std::string_view str);
 
   /**
@@ -98,12 +153,11 @@ public:
   constexpr error::Result<void> print(std::format_string<Args...> fmt,
                                       Args&&... args)
   {
-    if (std::fputs(std::format(fmt, std::forward<Args>(args)...).c_str(),
-                   _out) == EOF) {
-      return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
-    }
-    return {};
+    std::lock_guard lock(_mutex);
+    return print_impl(fmt, std::forward<Args>(args)...);
   }
+
+  char getchar();
 
   /**
    * @brief Enable raw mode
@@ -121,9 +175,18 @@ public:
 
 private:
   error::Result<void> putc_impl(char c);
-  error::Result<void> puts_impl(const std::string& str);
   error::Result<void> puts_impl(std::string_view str);
-  // error::Result<void>
+
+  template<typename... Args>
+  error::Result<void> print_impl(std::format_string<Args...> fmt,
+                                 Args&&... args)
+  {
+    if (std::fputs(std::format(fmt, std::forward<Args>(args)...).c_str(),
+                   _out) == EOF) {
+      return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+    }
+    return {};
+  }
 };
 
 class TOSH_EXPORT ANSIHideGuard
@@ -134,6 +197,11 @@ private:
 public:
   ANSIHideGuard(ANSIPort& port);
   ~ANSIHideGuard();
+
+  ANSIHideGuard(const ANSIHideGuard&) = delete;
+  ANSIHideGuard& operator=(const ANSIHideGuard&) = delete;
+  ANSIHideGuard(ANSIHideGuard&&) = delete;
+  ANSIHideGuard& operator=(ANSIHideGuard&&) = delete;
 };
 
 }

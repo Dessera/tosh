@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
+#include <mutex>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -32,14 +33,17 @@ ANSIPort::~ANSIPort()
 error::Result<TermCursor>
 ANSIPort::cursor()
 {
+  std::lock_guard lock(_mutex);
+
   std::size_t x = 0;
   std::size_t y = 0;
 
-  RETERR(print("\x1b[6n"));
+  // use ioctl?
+  // RETERR(puts_impl("\x1b[6n"));
 
-  if (std::fscanf(_in, "\x1b[%zu;%zuR", &y, &x) != 2) {
-    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
-  }
+  // if (std::fscanf(_in, "\x1b[%zu;%zuR", &y, &x) != 2) {
+  //   return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  // }
 
   return TermCursor{ x - 1, y - 1 };
 }
@@ -75,14 +79,18 @@ ANSIPort::unsafe_winsize()
 error::Result<void>
 ANSIPort::cursor(const TermCursor& cursor)
 {
-  return print("\x1b[{};{}H", cursor.y() + 1, cursor.x() + 1);
+  std::lock_guard lock(_mutex);
+
+  return print_impl("\x1b[{};{}H", cursor.y() + 1, cursor.x() + 1);
 }
 
 error::Result<void>
 ANSIPort::backward(std::size_t n)
 {
+  std::lock_guard lock(_mutex);
+
   if (n != 0) {
-    return print("\x1b[{}D", n);
+    return print_impl("\x1b[{}D", n);
   }
   return {};
 }
@@ -90,8 +98,10 @@ ANSIPort::backward(std::size_t n)
 error::Result<void>
 ANSIPort::forward(std::size_t n)
 {
+  std::lock_guard lock(_mutex);
+
   if (n != 0) {
-    return print("\x1b[{}C", n);
+    return print_impl("\x1b[{}C", n);
   }
   return {};
 }
@@ -99,16 +109,18 @@ ANSIPort::forward(std::size_t n)
 error::Result<void>
 ANSIPort::up(std::size_t n, bool set_to_start)
 {
+  std::lock_guard lock(_mutex);
+
   if (n != 0 && set_to_start) {
-    return print("\x1b[{}F", n);
+    return print_impl("\x1b[{}F", n);
   }
 
   if (n != 0 && !set_to_start) {
-    return print("\x1b[{}A", n);
+    return print_impl("\x1b[{}A", n);
   }
 
   if (n == 0 && set_to_start) {
-    return print("\r");
+    return putc_impl('\r');
   }
 
   return {};
@@ -117,16 +129,18 @@ ANSIPort::up(std::size_t n, bool set_to_start)
 error::Result<void>
 ANSIPort::down(std::size_t n, bool set_to_start)
 {
+  std::lock_guard lock(_mutex);
+
   if (n != 0 && set_to_start) {
-    return print("\x1b[{}E", n);
+    return print_impl("\x1b[{}E", n);
   }
 
   if (n != 0 && !set_to_start) {
-    return print("\x1b[{}B", n);
+    return print_impl("\x1b[{}B", n);
   }
 
   if (n == 0 && set_to_start) {
-    return print("\r");
+    return putc_impl('\n');
   }
 
   return {};
@@ -135,25 +149,31 @@ ANSIPort::down(std::size_t n, bool set_to_start)
 error::Result<void>
 ANSIPort::hide()
 {
-  return print("\x1b[?25l");
+  std::lock_guard lock(_mutex);
+
+  return puts_impl("\x1b[?25l");
 }
 
 error::Result<void>
 ANSIPort::show()
 {
-  return print("\x1b[?25h");
+  std::lock_guard lock(_mutex);
+
+  return puts_impl("\x1b[?25h");
 }
 
 error::Result<void>
 ANSIPort::cleanline(CleanType type)
 {
+  std::lock_guard lock(_mutex);
+
   switch (type) {
     case CleanType::TOEND:
-      return print("\x1b[K");
+      return puts_impl("\x1b[K");
     case CleanType::TOBEGIN:
-      return print("\x1b[1K");
+      return puts_impl("\x1b[1K");
     case CleanType::ALL:
-      return print("\x1b[2K");
+      return puts_impl("\x1b[2K");
     default:
       return {};
   }
@@ -162,13 +182,15 @@ ANSIPort::cleanline(CleanType type)
 error::Result<void>
 ANSIPort::clean(CleanType type)
 {
+  std::lock_guard lock(_mutex);
+
   switch (type) {
     case CleanType::TOEND:
-      return print("\x1b[0J");
+      return puts_impl("\x1b[0J");
     case CleanType::TOBEGIN:
-      return print("\x1b[1J");
+      return puts_impl("\x1b[1J");
     case CleanType::ALL:
-      return print("\x1b[2J");
+      return puts_impl("\x1b[2J");
     default:
       return {};
   }
@@ -177,28 +199,25 @@ ANSIPort::clean(CleanType type)
 error::Result<void>
 ANSIPort::putc(char c)
 {
-  if (std::fputc(c, _out) == EOF) {
-    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
-  }
-  return {};
-}
+  std::lock_guard lock(_mutex);
 
-error::Result<void>
-ANSIPort::puts(const std::string& str)
-{
-  if (std::fputs(str.c_str(), _out) == EOF) {
-    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
-  }
-  return {};
+  return putc_impl(c);
 }
 
 error::Result<void>
 ANSIPort::puts(std::string_view str)
 {
-  if (std::fwrite(str.data(), str.size(), 1, _out) == 0) {
-    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
-  }
-  return {};
+  std::lock_guard lock(_mutex);
+
+  return puts_impl(str);
+}
+
+char
+ANSIPort::getchar()
+{
+  std::lock_guard lock(_mutex);
+
+  return static_cast<char>(std::fgetc(_in));
 }
 
 error::Result<void>
@@ -233,6 +252,26 @@ ANSIPort::disable()
 
   term.c_lflag |= (ICANON | ECHO);
   if (tcsetattr(_in_fd, TCSANOW, &term) == -1) {
+    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  }
+
+  return {};
+}
+
+error::Result<void>
+ANSIPort::putc_impl(char c)
+{
+  if (std::fputc(c, _out) == EOF) {
+    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  }
+
+  return {};
+}
+
+error::Result<void>
+ANSIPort::puts_impl(std::string_view str)
+{
+  if (std::fwrite(str.data(), str.size(), 1, _out) == 0) {
     return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
   }
 
