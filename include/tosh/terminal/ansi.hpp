@@ -3,18 +3,15 @@
 #include "tosh/common.hpp"
 #include "tosh/error.hpp"
 #include "tosh/terminal/cursor.hpp"
+
 #include <cstddef>
 #include <cstdio>
 #include <format>
-#include <string>
 
 namespace tosh::terminal {
 
 class TOSH_EXPORT ANSIPort
 {
-public:
-  constexpr static size_t RD_BUFSIZ = 32;
-
 private:
   std::FILE* _out;
   std::FILE* _in;
@@ -23,17 +20,36 @@ public:
   ANSIPort(std::FILE* out, std::FILE* in);
   ~ANSIPort();
 
+  /**
+   * @brief Get the terminal cursor
+   *
+   * @return error::Result<TermCursor> Terminal cursor
+   */
   error::Result<TermCursor> cursor();
-  error::Result<TermCursor> size();
-  void cursor(const TermCursor& cursor);
+
+  /**
+   * @brief Get the terminal size
+   *
+   * @return error::Result<TermCursor> Terminal size
+   */
+  error::Result<TermCursor> winsize();
+  TermCursor unsafe_winsize();
+
+  /**
+   * @brief Set the terminal cursor
+   *
+   * @param cursor Terminal cursor
+   * @return error::Result<void> Operation result
+   */
+  error::Result<void> cursor(const TermCursor& cursor);
 
   /**
    * @brief Move the cursor up, optionally redirecting to the start of the
    * line.
    *
-   * @param n
-   * @param wrap
-   * @return error::Result<void>
+   * @param n Number of lines to move up
+   * @param set_to_start Whether to redirect to the start of the line
+   * @return error::Result<void> Operation result
    */
   error::Result<void> up(std::size_t n = 1, bool set_to_start = false);
   error::Result<void> down(std::size_t n = 1, bool set_to_start = false);
@@ -43,18 +59,33 @@ public:
   error::Result<void> hide();
   error::Result<void> show();
 
+  /**
+   * @brief Clear the current line from the cursor to the end of the line
+   *
+   * @return error::Result<void> Operation result
+   */
   error::Result<void> clear_eol();
 
-  constexpr void putc(char c) { std::fputc(c, _out); }
-  constexpr void puts(const std::string& str) { std::fputs(str.c_str(), _out); }
+  /**
+   * @brief Print a character to the terminal
+   *
+   * @param c Character to print
+   * @return error::Result<void> Operation result
+   */
+  error::Result<void> putc(char c);
+  error::Result<void> puts(const std::string& str);
 
-private:
-  void enable_raw_mode();
-  void disable_raw_mode();
-
+  /**
+   * @brief Print a formatted string to the terminal
+   *
+   * @tparam Args Format arguments
+   * @param fmt Format string
+   * @param args Format arguments
+   * @return constexpr error::Result<void> Operation result
+   */
   template<typename... Args>
-  constexpr error::Result<void> putcmd(std::format_string<Args...> fmt,
-                                       Args&&... args)
+  constexpr error::Result<void> print(std::format_string<Args...> fmt,
+                                      Args&&... args)
   {
     if (std::fputs(std::format(fmt, std::forward<Args>(args)...).c_str(),
                    _out) == EOF) {
@@ -62,6 +93,20 @@ private:
     }
     return {};
   }
+
+  /**
+   * @brief Enable raw mode
+   *
+   * @return error::Result<void> Operation result
+   */
+  error::Result<void> enable();
+
+  /**
+   * @brief Disable raw mode
+   *
+   * @return error::Result<void> Operation result
+   */
+  error::Result<void> disable();
 };
 
 class TOSH_EXPORT ANSIHideGuard

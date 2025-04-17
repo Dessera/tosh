@@ -37,7 +37,6 @@ public:
   error::Result<void> backward(std::size_t n = 1);
 
 private:
-  TermCursor unsafe_get_wsize();
   TermCursor get_vcursor_from_pos(std::size_t pos);
 };
 

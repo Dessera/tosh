@@ -10,12 +10,18 @@
 
 // macro to return when an error occurs
 #define RETERR(expr)                                                           \
-  {                                                                            \
+  if (auto res = (expr); !res.has_value()) {                                   \
+    return std::unexpected(res.error());                                       \
+  }
+
+#define UNWRAPERR(expr)                                                        \
+  ({                                                                           \
     auto _ret = (expr);                                                        \
     if (!_ret.has_value()) {                                                   \
       return std::unexpected(_ret.error());                                    \
     }                                                                          \
-  }
+    _ret.value();                                                              \
+  })
 
 #define LOGERR(expr)                                                           \
   {                                                                            \
@@ -63,7 +69,7 @@ private:
   std::string _msg;
 
 public:
-  Error(ErrorCode code, std::string message);
+  Error(ErrorCode code, std::string message) noexcept;
 
   [[nodiscard]] constexpr ErrorCode code() const noexcept { return _code; }
   [[nodiscard]] constexpr const std::string& message() const noexcept
@@ -82,22 +88,28 @@ template<typename T>
 using Result = std::expected<T, Error>;
 
 constexpr auto
-err(ErrorCode code, const std::string& message)
+err(ErrorCode code, const std::string& message) noexcept
 {
   return std::unexpected(Error(code, message));
 }
 
 constexpr auto
-err(ErrorCode code)
+raw_err(ErrorCode code) noexcept
 {
   auto errno_copy = errno;
-  return std::unexpected(
-    Error(code, errno_copy == 0 ? "Unknown error" : std::strerror(errno_copy)));
+  return Error(code,
+               errno_copy == 0 ? "Unknown error" : std::strerror(errno_copy));
+}
+
+constexpr auto
+err(ErrorCode code) noexcept
+{
+  return std::unexpected(raw_err(code));
 }
 
 template<typename... Args>
 constexpr auto
-err(ErrorCode code, std::format_string<Args...> fmt, Args&&... args)
+err(ErrorCode code, std::format_string<Args...> fmt, Args&&... args) noexcept
 {
   return std::unexpected(
     Error(code, std::format(fmt, std::forward<Args>(args)...)));

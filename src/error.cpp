@@ -6,7 +6,7 @@
 #include "tosh/error.hpp"
 namespace tosh::error {
 
-Error::Error(ErrorCode code, std::string message)
+Error::Error(ErrorCode code, std::string message) noexcept
   : _code(code)
   , _msg(std::move(message))
 {

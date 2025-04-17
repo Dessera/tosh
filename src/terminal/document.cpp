@@ -2,6 +2,8 @@
 #include "tosh/error.hpp"
 #include "tosh/terminal/ansi.hpp"
 #include "tosh/terminal/cursor.hpp"
+
+#include <cassert>
 #include <cstddef>
 #include <numeric>
 #include <ranges>
@@ -13,22 +15,20 @@ namespace tosh::terminal {
 Document::Document(std::FILE* out, std::FILE* in, std::string prompt)
   : _prompt(std::move(prompt))
   , _term(out, in)
-  , _wsize(unsafe_get_wsize())
+  , _wsize(_term.unsafe_winsize())
 {
-  _term.puts(_prompt);
 }
 
 error::Result<void>
 Document::insert(char c)
 {
-  // auto vcursor = get_vcursor_from_pos(_cursor);
-  // auto pcursor = _term.cursor();
+  assert(_cursor <= _buffer.size());
 
   _buffer.insert(_cursor, 1, c);
   _cursor++;
 
-  _term.putc(c);
-  auto fcur = _term.cursor().value();
+  RETERR(_term.putc(c));
+  auto fcur = UNWRAPERR(_term.cursor());
   auto vcursor = get_vcursor_from_pos(_cursor);
 
   ANSIHideGuard hide(_term);
@@ -36,8 +36,8 @@ Document::insert(char c)
   RETERR(_term.up(vcursor.y() - 1, true));
   RETERR(_term.forward(_prompt.size()));
 
-  _term.puts(_buffer);
-  _term.cursor(fcur);
+  RETERR(_term.puts(_buffer));
+  RETERR(_term.cursor(fcur));
 
   return {};
 }
@@ -45,6 +45,8 @@ Document::insert(char c)
 error::Result<void>
 Document::backward(std::size_t n)
 {
+  assert(_cursor <= _buffer.size());
+
   auto vcursor = get_vcursor_from_pos(_cursor);
 
   ANSIHideGuard hide(_term);
@@ -53,21 +55,9 @@ Document::backward(std::size_t n)
   RETERR(_term.forward(_prompt.size()));
 
   _cursor = _cursor < n ? 0 : _cursor - n;
-  _term.puts(_buffer.substr(0, _cursor));
+  RETERR(_term.puts(_buffer.substr(0, _cursor)));
 
   return {};
-}
-
-TermCursor
-Document::unsafe_get_wsize()
-{
-  auto res = _term.size();
-
-  if (!res.has_value()) {
-    throw std::runtime_error("Failed to get terminal size");
-  }
-
-  return res.value();
 }
 
 TermCursor

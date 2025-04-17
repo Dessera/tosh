@@ -19,12 +19,14 @@ ANSIPort::ANSIPort(std::FILE* out, std::FILE* in)
   assert(out != nullptr);
   assert(in != nullptr);
 
-  enable_raw_mode();
+  setvbuf(_in, nullptr, _IONBF, 0);
+  setvbuf(_out, nullptr, _IONBF, 0);
 }
 
 ANSIPort::~ANSIPort()
 {
-  disable_raw_mode();
+  setvbuf(_in, nullptr, _IOLBF, BUFSIZ);
+  setvbuf(_out, nullptr, _IOLBF, BUFSIZ);
 }
 
 error::Result<TermCursor>
@@ -33,7 +35,7 @@ ANSIPort::cursor()
   std::size_t x = 0;
   std::size_t y = 0;
 
-  RETERR(putcmd("\x1b[6n"));
+  RETERR(print("\x1b[6n"));
 
   if (std::fscanf(_in, "\x1b[%zu;%zuR", &y, &x) != 2) {
     return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
@@ -43,12 +45,12 @@ ANSIPort::cursor()
 }
 
 error::Result<TermCursor>
-ANSIPort::size()
+ANSIPort::winsize()
 {
   int _out_fd = fileno(_out);
 
   // NOLINTNEXTLINE
-  winsize w;
+  struct winsize w;
   if (ioctl(_out_fd, TIOCGWINSZ, &w) == -1) {
     return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
   }
@@ -56,17 +58,31 @@ ANSIPort::size()
   return TermCursor{ w.ws_col, w.ws_row };
 }
 
-void
+TermCursor
+ANSIPort::unsafe_winsize()
+{
+  int _out_fd = fileno(_out);
+
+  // NOLINTNEXTLINE
+  struct winsize w;
+  if (ioctl(_out_fd, TIOCGWINSZ, &w) == -1) {
+    throw error::raw_err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  }
+
+  return TermCursor{ w.ws_col, w.ws_row };
+}
+
+error::Result<void>
 ANSIPort::cursor(const TermCursor& cursor)
 {
-  std::fprintf(_out, "\x1b[%zu;%zuH", cursor.y() + 1, cursor.x() + 1);
+  return print("\x1b[{};{}H", cursor.y() + 1, cursor.x() + 1);
 }
 
 error::Result<void>
 ANSIPort::backward(std::size_t n)
 {
   if (n != 0) {
-    return putcmd("\x1b[{}D", n);
+    return print("\x1b[{}D", n);
   }
   return {};
 }
@@ -75,7 +91,7 @@ error::Result<void>
 ANSIPort::forward(std::size_t n)
 {
   if (n != 0) {
-    return putcmd("\x1b[{}C", n);
+    return print("\x1b[{}C", n);
   }
   return {};
 }
@@ -84,15 +100,15 @@ error::Result<void>
 ANSIPort::up(std::size_t n, bool set_to_start)
 {
   if (n != 0 && set_to_start) {
-    return putcmd("\x1b[{}F", n);
+    return print("\x1b[{}F", n);
   }
 
   if (n != 0 && !set_to_start) {
-    return putcmd("\x1b[{}A", n);
+    return print("\x1b[{}A", n);
   }
 
   if (n == 0 && set_to_start) {
-    return putcmd("\r");
+    return print("\r");
   }
 
   return {};
@@ -102,15 +118,15 @@ error::Result<void>
 ANSIPort::down(std::size_t n, bool set_to_start)
 {
   if (n != 0 && set_to_start) {
-    return putcmd("\x1b[{}E", n);
+    return print("\x1b[{}E", n);
   }
 
   if (n != 0 && !set_to_start) {
-    return putcmd("\x1b[{}B", n);
+    return print("\x1b[{}B", n);
   }
 
   if (n == 0 && set_to_start) {
-    return putcmd("\r");
+    return print("\r");
   }
 
   return {};
@@ -119,49 +135,75 @@ ANSIPort::down(std::size_t n, bool set_to_start)
 error::Result<void>
 ANSIPort::hide()
 {
-  return putcmd("\x1b[?25l");
+  return print("\x1b[?25l");
 }
 
 error::Result<void>
 ANSIPort::show()
 {
-  return putcmd("\x1b[?25h");
+  return print("\x1b[?25h");
 }
 
 error::Result<void>
 ANSIPort::clear_eol()
 {
-  return putcmd("\x1b[K");
+  return print("\x1b[K");
 }
 
-void
-ANSIPort::enable_raw_mode()
+error::Result<void>
+ANSIPort::putc(char c)
+{
+  if (std::fputc(c, _out) == EOF) {
+    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  }
+  return {};
+}
+
+error::Result<void>
+ANSIPort::puts(const std::string& str)
+{
+  if (std::fputs(str.c_str(), _out) == EOF) {
+    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  }
+  return {};
+}
+
+error::Result<void>
+ANSIPort::enable()
 {
   int _in_fd = fileno(_in);
 
   // NOLINTNEXTLINE
   termios term;
-  tcgetattr(_in_fd, &term);
+  if (tcgetattr(_in_fd, &term) == -1) {
+    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  }
+
   term.c_lflag &= ~(ICANON | ECHO);
-  tcsetattr(_in_fd, TCSANOW, &term);
+  if (tcsetattr(_in_fd, TCSANOW, &term) == -1) {
+    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  }
 
-  setvbuf(_in, nullptr, _IONBF, 0);
-  setvbuf(_out, nullptr, _IONBF, 0);
+  return {};
 }
 
-void
-ANSIPort::disable_raw_mode()
+error::Result<void>
+ANSIPort::disable()
 {
   int _in_fd = fileno(_in);
 
   // NOLINTNEXTLINE
   termios term;
-  tcgetattr(_in_fd, &term);
-  term.c_lflag |= (ICANON | ECHO);
-  tcsetattr(_in_fd, TCSANOW, &term);
+  if (tcgetattr(_in_fd, &term) == -1) {
+    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  }
 
-  setvbuf(_in, nullptr, _IOLBF, BUFSIZ);
-  setvbuf(_out, nullptr, _IOLBF, BUFSIZ);
+  term.c_lflag |= (ICANON | ECHO);
+  if (tcsetattr(_in_fd, TCSANOW, &term) == -1) {
+    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  }
+
+  return {};
 }
 
 ANSIHideGuard::ANSIHideGuard(ANSIPort& port)
