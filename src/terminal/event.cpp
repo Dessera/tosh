@@ -1,6 +1,7 @@
 #include "tosh/terminal/event.hpp"
 #include "tosh/error.hpp"
 
+#include <array>
 #include <cstdio>
 #include <event2/event.h>
 #include <unistd.h>
@@ -27,10 +28,28 @@ void
 // NOLINTNEXTLINE
 InputEventPool::on_input_ready(evutil_socket_t fd, short event, void* arg)
 {
-  char buf[256];
+  if (!(event & EV_READ)) {
+    return;
+  }
+
+  std::array<char, EV_BUFSIZ> buf{};
   auto* pool = static_cast<InputEventPool*>(arg);
 
-  auto len = read(fd, buf, sizeof(buf));
+  auto len = read(fd, buf.data(), buf.size());
+
+  if (len < 0) {
+    return;
+  }
+
+  buf.at(len) = '\0';
+
+  if (buf[0] == '\x1b') {
+    pool->_ansi_events.emplace(buf.data());
+  } else {
+    for (auto i = 0; i < len; ++i) {
+      pool->_input_events.emplace(buf.at(i));
+    }
+  }
 }
 
 event_base*

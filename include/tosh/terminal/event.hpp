@@ -1,31 +1,41 @@
 #pragma once
 
-#include "tosh/error.hpp"
+#include "tosh/common.hpp"
+#include "tosh/utils/queue.hpp"
 
 #include <event2/event.h>
-#include <queue>
 #include <string>
 #include <thread>
 
 namespace tosh::terminal {
 
-class InputEventPool
+enum class TOSH_EXPORT InputEventType : uint8_t
 {
+  ASCII,
+  GETCURSOR,
+  ARROWUP,
+  ARROWDOWN,
+  ARROWLEFT,
+  ARROWRIGHT,
+};
+
+class TOSH_EXPORT InputEventPool
+{
+public:
+  constexpr static int EV_BUFSIZ = 256;
+
 private:
   event_base* _base;
   std::thread _event_loop;
-  std::queue<std::string> _ansi_codes;
-  std::queue<std::string> _ascii_codes;
+  utils::SyncQueue<std::string> _ansi_events{};
+  utils::SyncQueue<char> _input_events{};
 
 public:
   InputEventPool(std::FILE* in);
   ~InputEventPool();
 
-  InputEventPool(const InputEventPool&) = delete;
-  InputEventPool& operator=(const InputEventPool&) = delete;
-
-  InputEventPool(InputEventPool&&) noexcept = default;
-  InputEventPool& operator=(InputEventPool&&) = default;
+  constexpr auto read_ansi_event() { return _ansi_events.pop(); }
+  constexpr auto read_input_event() { return _input_events.pop(); }
 
 private:
   static void on_input_ready(evutil_socket_t fd, short events, void* arg);
