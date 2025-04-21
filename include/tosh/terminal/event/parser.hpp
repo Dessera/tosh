@@ -1,41 +1,58 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <variant>
+
 namespace tosh::terminal {
 
-enum class EventType : uint8_t
+/**
+ * @brief Get string event.
+ *
+ */
+struct EventGetString
 {
-  ASCII,
-  GETCURSOR,
-  ARROWUP,
-  ARROWDOWN,
-  ARROWLEFT,
-  ARROWRIGHT,
+  std::string str;
 };
 
-using EventPayload =
-  std::variant<std::string, std::pair<std::size_t, std::size_t>>;
-
-struct Event
+/**
+ * @brief Get cursor event.
+ */
+struct EventGetCursor
 {
-  EventType type;
-  EventPayload payload;
+  std::size_t x;
+  std::size_t y;
 };
 
-class EventParser
-{
-public:
-  [[nodiscard]] std::optional<Event> parse(std::string_view input) const;
+/**
+ * @brief Event type.
+ */
+using Event = std::variant<EventGetString, EventGetCursor>;
 
-private:
-  [[nodiscard]] std::optional<Event> parse_get_cursor(
-    std::string_view input) const;
+/**
+ * @brief Parses a string into an event.
+ *
+ * @param input String to parse.
+ * @return std::optional<Event> Parsed event, or std::nullopt if the string
+ * could not be parsed.
+ */
+std::optional<Event>
+parse(std::string_view input);
+
+/**
+ * @brief Event filter that checks if the event is one of the specified types.
+ *
+ * @tparam Ts Types to check for.
+ */
+template<typename... Ts>
+struct EventFilter
+{
+  constexpr bool operator()(const Event& event) const
+  {
+    return (... || std::holds_alternative<Ts>(event));
+  }
 };
 
 }

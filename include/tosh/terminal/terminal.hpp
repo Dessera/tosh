@@ -2,16 +2,21 @@
 
 #include "tosh/common.hpp"
 #include "tosh/error.hpp"
-#include "tosh/terminal/cursor.hpp"
+#include "tosh/terminal/event/reader.hpp"
 
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <format>
-#include <mutex>
 #include <string_view>
 
 namespace tosh::terminal {
+
+struct TermCursor
+{
+  std::size_t x;
+  std::size_t y;
+};
 
 enum class CleanType : uint8_t
 {
@@ -20,17 +25,17 @@ enum class CleanType : uint8_t
   ALL
 };
 
-class TOSH_EXPORT ANSIPort
+class Terminal
 {
 private:
   std::FILE* _out;
   std::FILE* _in;
 
-  std::mutex _mutex;
+  EventReader _reader;
 
 public:
-  ANSIPort(std::FILE* out, std::FILE* in);
-  ~ANSIPort();
+  Terminal(std::FILE* out, std::FILE* in);
+  ~Terminal();
 
   /**
    * @brief Get the terminal cursor
@@ -153,11 +158,10 @@ public:
   constexpr error::Result<void> print(std::format_string<Args...> fmt,
                                       Args&&... args)
   {
-    std::lock_guard lock(_mutex);
     return print_impl(fmt, std::forward<Args>(args)...);
   }
 
-  char getchar();
+  error::Result<std::string> gets();
 
   /**
    * @brief Enable raw mode
@@ -192,10 +196,10 @@ private:
 class TOSH_EXPORT ANSIHideGuard
 {
 private:
-  ANSIPort* _port;
+  Terminal* _port;
 
 public:
-  ANSIHideGuard(ANSIPort& port);
+  ANSIHideGuard(Terminal& port);
   ~ANSIHideGuard();
 
   ANSIHideGuard(const ANSIHideGuard&) = delete;

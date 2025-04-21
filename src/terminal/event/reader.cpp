@@ -87,10 +87,9 @@ EventReader::handle_event(evutil_socket_t fd, short event, void* arg)
     return;
   }
 
-  auto e = reader->_parser.parse(std::string_view(buf.data(), n));
-
-  if (e.has_value()) {
-    reader->push(e.value());
+  if (auto payload = parse(std::string_view(buf.data(), n));
+      payload.has_value()) {
+    reader->push(payload.value());
   }
 }
 

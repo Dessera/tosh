@@ -2,11 +2,11 @@
 
 #include "tosh/common.hpp"
 #include "tosh/error.hpp"
-#include "tosh/terminal/ansi.hpp"
-#include "tosh/terminal/cursor.hpp"
+#include "tosh/terminal/terminal.hpp"
 
 #include <cstddef>
 #include <cstdio>
+#include <list>
 #include <string>
 
 namespace tosh::terminal {
@@ -16,22 +16,18 @@ class TOSH_EXPORT Document
 private:
   std::string _prompt;
 
-  ANSIPort _term;
+  Terminal _term;
 
-  /**
-   * @brief User input buffer
-   */
   std::string _buffer;
-
-  /**
-   * @brief Real position of the cursor in the buffer
-   */
-  std::size_t _cursor{ 0 };
+  std::size_t _cpos;
 
   TermCursor _wsize;
 
 public:
   Document(std::FILE* out, std::FILE* in, std::string prompt);
+  ~Document();
+
+  error::Result<std::string> gets();
 
   /**
    * @brief Insert a character at the cursor position
@@ -72,13 +68,6 @@ public:
   error::Result<void> leave();
 
   error::Result<void> resize(const TermCursor& size);
-
-  [[nodiscard]] constexpr auto& terminal() const { return _term; }
-  [[nodiscard]] constexpr auto& terminal() { return _term; }
-
-private:
-  TermCursor get_vcursor_from_pos(std::size_t pos);
-  void cursor_fixup(TermCursor& pos);
 };
 
 }

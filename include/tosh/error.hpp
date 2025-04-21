@@ -60,6 +60,7 @@ enum class TOSH_EXPORT ErrorCode : uint8_t
   UNEXPECTED_IO_STATUS,
   EVENT_LOOP_FAILED,
   EVENT_NOT_FOUND,
+  EVENT_TIMEOUT,
 
   UNKNOWN
 };
@@ -115,6 +116,20 @@ err(ErrorCode code, std::format_string<Args...> fmt, Args&&... args) noexcept
 {
   return std::unexpected(
     Error(code, std::format(fmt, std::forward<Args>(args)...)));
+}
+
+template<typename T, typename... Args>
+constexpr auto
+ok(Args&&... args) noexcept
+{
+  return std::expected<T, Error>(T(std::forward<Args>(args)...));
+}
+
+template<>
+constexpr auto
+ok<void>() noexcept
+{
+  return std::expected<void, Error>();
 }
 
 }

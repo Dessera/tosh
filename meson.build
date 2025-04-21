@@ -20,6 +20,7 @@ shlib = shared_library(
   dependencies: [magic_enum_dep, libevent],
   include_directories: lib_inc,
   gnu_symbol_visibility: 'hidden',
+  cpp_args: ['-Wall', '-Wno-pedantic'],
   install: true,
 )
 

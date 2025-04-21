@@ -1,7 +1,6 @@
 #include "tosh/terminal/document.hpp"
 #include "tosh/error.hpp"
-#include "tosh/terminal/ansi.hpp"
-#include "tosh/terminal/cursor.hpp"
+#include "tosh/terminal/terminal.hpp"
 
 #include <cassert>
 #include <cstddef>
@@ -19,80 +18,91 @@ Document::Document(std::FILE* out, std::FILE* in, std::string prompt)
 {
 }
 
+Document::~Document() {}
+
+error::Result<std::string>
+Document::gets()
+{
+  return _term.gets();
+}
+
 error::Result<void>
 Document::insert(char c)
 {
-  assert(_cursor <= _buffer.size());
+  // assert(_cursor <= _buffer.size());
 
-  _buffer.insert(_cursor, 1, c);
-  _cursor++;
+  ANSIHideGuard hide{ _term };
 
-  RETERR(_term.putc(c));
+  // auto precur = UNWRAPERR(_term.cursor());
+  // auto poscur = precur;
 
-  auto fcur = UNWRAPERR(_term.cursor());
-  cursor_fixup(fcur);
+  // _buffer.insert(_cursor, 1, c);
+  // _cursor++;
 
-  RETERR(_term.cursor(fcur));
+  // RETERR(_term.putc(c));
 
-  auto vcur = get_vcursor_from_pos(_cursor);
+  // auto fcur = UNWRAPERR(_term.cursor());
+  // cursor_fixup(fcur);
 
-  ANSIHideGuard hide(_term);
+  // RETERR(_term.cursor(fcur));
 
-  RETERR(_term.up(vcur.y(), true));
-  RETERR(_term.puts(_prompt));
+  // auto vcur = get_vcursor_from_pos(_cursor);
 
-  RETERR(_term.clean(CleanType::TOEND));
-  RETERR(_term.puts(_buffer));
+  // RETERR(_term.up(vcur.y, true));
+  // RETERR(_term.puts(_prompt));
 
-  RETERR(_term.cursor(fcur));
+  // RETERR(_term.clean(CleanType::TOEND));
+  // RETERR(_term.puts(_buffer));
 
-  return {};
+  // RETERR(_term.cursor(fcur));
+
+  // return {};
 }
 
 error::Result<void>
 Document::backward(std::size_t n)
 {
-  assert(_cursor <= _buffer.size());
+  // assert(_cursor <= _buffer.size());
 
-  auto vcur = get_vcursor_from_pos(_cursor);
+  // auto vcur = calc_vcursor(0, _cursor);
 
-  ANSIHideGuard hide(_term);
+  // ANSIHideGuard hide(_term);
 
-  RETERR(_term.up(vcur.y(), true));
-  RETERR(_term.forward(_prompt.size()));
+  // RETERR(_term.up(vcur.y, true));
+  // RETERR(_term.puts(_prompt));
 
-  _cursor = _cursor < n ? 0 : _cursor - n;
-  RETERR(_term.puts(_buffer.substr(0, _cursor)));
+  // _cursor = _cursor < n ? 0 : _cursor - n;
+  // RETERR(_term.puts(_buffer.substr(0, _cursor)));
 
-  auto pcur = UNWRAPERR(_term.cursor());
-  cursor_fixup(pcur);
+  // auto pcur = UNWRAPERR(_term.cursor());
+  // cursor_fixup(pcur);
 
-  RETERR(_term.cursor(pcur));
+  // RETERR(_term.cursor(pcur));
 
-  return {};
+  // return {};
 }
 
 error::Result<void>
 Document::forward(std::size_t n)
 {
-  assert(_cursor <= _buffer.size());
+  // assert(_cursor <= _buffer.size());
 
-  auto vcur = get_vcursor_from_pos(_cursor);
+  // auto vcur = calc_vcursor(0, _cursor);
 
-  ANSIHideGuard hide(_term);
+  // ANSIHideGuard hide(_term);
 
-  RETERR(_term.up(vcur.y(), true));
-  RETERR(_term.forward(_prompt.size()));
+  // RETERR(_term.up(vcur.y, true));
+  // RETERR(_term.puts(_prompt));
 
-  _cursor = _cursor + n > _buffer.size() ? _buffer.size() : _cursor + n;
-  RETERR(_term.puts(_buffer.substr(0, _cursor)));
+  // _cursor = _cursor + n > _buffer.size() ? _buffer.size() : _cursor + n;
+  // RETERR(_term.puts(_buffer.substr(0, _cursor)));
 
-  auto pcur = UNWRAPERR(_term.cursor());
-  cursor_fixup(pcur);
+  // auto pcur = UNWRAPERR(_term.cursor());
+  // cursor_fixup(pcur);
 
-  RETERR(_term.cursor(pcur));
+  // RETERR(_term.cursor(pcur));
 
-  return {};
+  // return {};
 }
 
 error::Result<void>
@@ -103,7 +113,7 @@ Document::enter()
   auto _ = _term.puts(_prompt);
 
   _buffer.clear();
-  _cursor = 0;
+  _cpos = 0;
 
   return {};
 }
@@ -118,66 +128,20 @@ Document::leave()
   return {};
 }
 
-error::Result<void>
-Document::resize(const TermCursor& size)
-{
-  auto vcur = get_vcursor_from_pos(_cursor);
+// error::Result<void>
+// Document::resize(const TermCursor& size)
+// {
+//   auto vcur = get_vcursor_from_pos(_cursor);
 
-  RETERR(_term.up(vcur.y(), true));
-  RETERR(_term.forward(_prompt.size()));
+//   RETERR(_term.up(vcur.y, true));
+//   RETERR(_term.forward(_prompt.size()));
 
-  RETERR(_term.puts(_buffer));
-  auto _ = _term.cleanline(CleanType::TOEND);
+//   RETERR(_term.puts(_buffer));
+//   auto _ = _term.cleanline(CleanType::TOEND);
 
-  _wsize = size;
+//   _wsize = size;
 
-  return {};
-}
-
-TermCursor
-Document::get_vcursor_from_pos(std::size_t pos)
-{
-  namespace views = std::ranges::views;
-  namespace ranges = std::ranges;
-
-  auto res =
-    _buffer | views::take(pos) | views::split('\n') |
-    views::transform([&](const auto& substr) -> std::pair<size_t, size_t> {
-      return { substr.size() / _wsize.x(), substr.size() % _wsize.x() };
-    }) |
-    ranges::to<std::vector<std::pair<size_t, size_t>>>();
-
-  if (res.empty()) {
-    res.emplace_back(0, 0);
-  };
-
-  // prompt fixup
-  auto& front = res.front();
-  front.second += _prompt.size();
-  if (front.second >= _wsize.x()) {
-    front.first += front.second / _wsize.x();
-    front.second = front.second % _wsize.x();
-  }
-
-  auto y = std::transform_reduce(res.begin(),
-                                 res.end(),
-                                 res.size(),
-                                 std::plus(),
-                                 [](const auto& p) { return p.first; }) -
-           1;
-
-  auto x = res.back().second;
-
-  return { x, y };
-}
-
-void
-Document::cursor_fixup(TermCursor& pos)
-{
-  if (pos.x() >= _wsize.x()) {
-    pos.y() += pos.x() / _wsize.x();
-    pos.x() = pos.x() % _wsize.x();
-  }
-}
+//   return {};
+// }
 
 }

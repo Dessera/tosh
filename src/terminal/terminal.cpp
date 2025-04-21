@@ -1,11 +1,10 @@
-#include "tosh/terminal/ansi.hpp"
+#include "tosh/terminal/terminal.hpp"
 #include "tosh/error.hpp"
-#include "tosh/terminal/cursor.hpp"
+#include "tosh/terminal/event/parser.hpp"
 
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
-#include <mutex>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -13,43 +12,45 @@
 namespace tosh::terminal {
 
 // NOLINTNEXTLINE
-ANSIPort::ANSIPort(std::FILE* out, std::FILE* in)
+Terminal::Terminal(std::FILE* out, std::FILE* in)
   : _out(out)
   , _in(in)
+  , _reader(in)
 {
   assert(out != nullptr);
   assert(in != nullptr);
 
-  // setvbuf(_in, nullptr, _IONBF, 0);
   setvbuf(_out, nullptr, _IONBF, 0);
 }
 
-ANSIPort::~ANSIPort()
+Terminal::~Terminal()
 {
-  // setvbuf(_in, nullptr, _IOLBF, BUFSIZ);
   setvbuf(_out, nullptr, _IOLBF, BUFSIZ);
 }
 
 error::Result<TermCursor>
-ANSIPort::cursor()
+Terminal::cursor()
 {
-  std::lock_guard lock(_mutex);
+  using namespace std::chrono_literals;
 
-  std::size_t x = 0;
-  std::size_t y = 0;
+  RETERR(puts_impl("\x1b[6n"));
 
-  // use ioctl?
-  // RETERR(puts_impl("\x1b[6n"));
+  while (true) {
+    auto res = _reader.read(EventFilter<EventGetCursor>(), 2s);
+    if (!res.has_value() &&
+        res.error().code() == error::ErrorCode::EVENT_TIMEOUT) {
+      continue;
+    }
 
-  // if (std::fscanf(_in, "\x1b[%zu;%zuR", &y, &x) != 2) {
-  //   return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
-  // }
-
-  return TermCursor{ x - 1, y - 1 };
+    auto event = UNWRAPERR(res);
+    if (auto* eptr = std::get_if<EventGetCursor>(&event); eptr != nullptr) {
+      return TermCursor{ .x = eptr->x, .y = eptr->y };
+    }
+  }
 }
 
 error::Result<TermCursor>
-ANSIPort::winsize()
+Terminal::winsize()
 {
   int _out_fd = fileno(_out);
 
@@ -59,11 +60,11 @@ ANSIPort::winsize()
     return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
   }
 
-  return TermCursor{ w.ws_col, w.ws_row };
+  return TermCursor{ .x = w.ws_col, .y = w.ws_row };
 }
 
 TermCursor
-ANSIPort::unsafe_winsize()
+Terminal::unsafe_winsize()
 {
   int _out_fd = fileno(_out);
 
@@ -73,22 +74,18 @@ ANSIPort::unsafe_winsize()
     throw error::raw_err(error::ErrorCode::UNEXPECTED_IO_STATUS);
   }
 
-  return TermCursor{ w.ws_col, w.ws_row };
+  return TermCursor{ .x = w.ws_col, .y = w.ws_row };
 }
 
 error::Result<void>
-ANSIPort::cursor(const TermCursor& cursor)
+Terminal::cursor(const TermCursor& cursor)
 {
-  std::lock_guard lock(_mutex);
-
-  return print_impl("\x1b[{};{}H", cursor.y() + 1, cursor.x() + 1);
+  return print_impl("\x1b[{};{}H", cursor.y + 1, cursor.x + 1);
 }
 
 error::Result<void>
-ANSIPort::backward(std::size_t n)
+Terminal::backward(std::size_t n)
 {
-  std::lock_guard lock(_mutex);
-
   if (n != 0) {
     return print_impl("\x1b[{}D", n);
   }
@@ -96,10 +93,8 @@ ANSIPort::backward(std::size_t n)
 }
 
 error::Result<void>
-ANSIPort::forward(std::size_t n)
+Terminal::forward(std::size_t n)
 {
-  std::lock_guard lock(_mutex);
-
   if (n != 0) {
     return print_impl("\x1b[{}C", n);
   }
@@ -107,10 +102,8 @@ ANSIPort::forward(std::size_t n)
 }
 
 error::Result<void>
-ANSIPort::up(std::size_t n, bool set_to_start)
+Terminal::up(std::size_t n, bool set_to_start)
 {
-  std::lock_guard lock(_mutex);
-
   if (n != 0 && set_to_start) {
     return print_impl("\x1b[{}F", n);
   }
@@ -127,10 +120,8 @@ ANSIPort::up(std::size_t n, bool set_to_start)
 }
 
 error::Result<void>
-ANSIPort::down(std::size_t n, bool set_to_start)
+Terminal::down(std::size_t n, bool set_to_start)
 {
-  std::lock_guard lock(_mutex);
-
   if (n != 0 && set_to_start) {
     return print_impl("\x1b[{}E", n);
   }
@@ -147,26 +138,20 @@ ANSIPort::down(std::size_t n, bool set_to_start)
 }
 
 error::Result<void>
-ANSIPort::hide()
+Terminal::hide()
 {
-  std::lock_guard lock(_mutex);
-
   return puts_impl("\x1b[?25l");
 }
 
 error::Result<void>
-ANSIPort::show()
+Terminal::show()
 {
-  std::lock_guard lock(_mutex);
-
   return puts_impl("\x1b[?25h");
 }
 
 error::Result<void>
-ANSIPort::cleanline(CleanType type)
+Terminal::cleanline(CleanType type)
 {
-  std::lock_guard lock(_mutex);
-
   switch (type) {
     case CleanType::TOEND:
       return puts_impl("\x1b[K");
@@ -180,10 +165,8 @@ ANSIPort::cleanline(CleanType type)
 }
 
 error::Result<void>
-ANSIPort::clean(CleanType type)
+Terminal::clean(CleanType type)
 {
-  std::lock_guard lock(_mutex);
-
   switch (type) {
     case CleanType::TOEND:
       return puts_impl("\x1b[0J");
@@ -197,31 +180,30 @@ ANSIPort::clean(CleanType type)
 }
 
 error::Result<void>
-ANSIPort::putc(char c)
+Terminal::putc(char c)
 {
-  std::lock_guard lock(_mutex);
-
   return putc_impl(c);
 }
 
 error::Result<void>
-ANSIPort::puts(std::string_view str)
+Terminal::puts(std::string_view str)
 {
-  std::lock_guard lock(_mutex);
-
   return puts_impl(str);
 }
 
-char
-ANSIPort::getchar()
+error::Result<std::string>
+Terminal::gets()
 {
-  std::lock_guard lock(_mutex);
+  auto event = UNWRAPERR(_reader.read(EventFilter<EventGetString>()));
+  if (auto* eptr = std::get_if<EventGetString>(&event); eptr != nullptr) {
+    return eptr->str;
+  }
 
-  return static_cast<char>(std::fgetc(_in));
+  return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
 }
 
 error::Result<void>
-ANSIPort::enable()
+Terminal::enable()
 {
   int _in_fd = fileno(_in);
 
@@ -240,7 +222,7 @@ ANSIPort::enable()
 }
 
 error::Result<void>
-ANSIPort::disable()
+Terminal::disable()
 {
   int _in_fd = fileno(_in);
 
@@ -259,7 +241,7 @@ ANSIPort::disable()
 }
 
 error::Result<void>
-ANSIPort::putc_impl(char c)
+Terminal::putc_impl(char c)
 {
   if (std::fputc(c, _out) == EOF) {
     return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
@@ -269,7 +251,7 @@ ANSIPort::putc_impl(char c)
 }
 
 error::Result<void>
-ANSIPort::puts_impl(std::string_view str)
+Terminal::puts_impl(std::string_view str)
 {
   if (std::fwrite(str.data(), str.size(), 1, _out) == 0) {
     return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
@@ -278,7 +260,7 @@ ANSIPort::puts_impl(std::string_view str)
   return {};
 }
 
-ANSIHideGuard::ANSIHideGuard(ANSIPort& port)
+ANSIHideGuard::ANSIHideGuard(Terminal& port)
   : _port(&port)
 {
   auto _ = _port->hide();

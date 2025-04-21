@@ -12,6 +12,9 @@
 
 namespace tosh::terminal {
 
+/**
+ * @brief Stdin event reader
+ */
 class EventReader
 {
 public:
@@ -26,48 +29,16 @@ private:
   std::mutex _lock;
   std::condition_variable _cv;
 
-  EventParser _parser{};
-
 public:
   EventReader(std::FILE* in);
   ~EventReader();
 
-  template<typename Dt>
-  error::Result<bool> poll(auto&& pred,
-                           const std::chrono::duration<Dt>& timeout)
-  {
-    std::unique_lock<std::mutex> lock(_lock);
-
-    if (_cv.wait_for(lock, timeout, [this, &pred]() {
-          return std::any_of(_events.begin(), _events.end(), pred);
-        })) {
-      if (auto it = std::find_if(_events.begin(), _events.end(), pred);
-          it != _events.end()) {
-        _events.erase(it);
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  error::Result<bool> poll(auto&& pred)
-  {
-    std::unique_lock<std::mutex> lock(_lock);
-
-    _cv.wait(lock, [this, &pred]() {
-      return std::any_of(_events.begin(), _events.end(), pred);
-    });
-
-    if (auto it = std::find_if(_events.begin(), _events.end(), pred);
-        it != _events.end()) {
-      _events.erase(it);
-      return true;
-    }
-
-    return false;
-  }
-
+  /**
+   * @brief Reads an event which matches the predicate
+   *
+   * @param pred predicate to match events
+   * @return error::Result<Event> event if found, error otherwise
+   */
   error::Result<Event> read(auto&& pred)
   {
     std::unique_lock<std::mutex> lock(_lock);
@@ -83,11 +54,56 @@ public:
       return event;
     }
 
-    return error::err(error::ErrorCode::EVENT_NOT_FOUND, "Event not found");
+    return error::err(error::ErrorCode::EVENT_NOT_FOUND,
+                      "Requested event not found");
   }
 
+  /**
+   * @brief Reads an event which matches the predicate
+   *
+   * @tparam Dt duration type
+   * @param pred predicate to match events
+   * @param timeout read timeout
+   * @return error::Result<Event> event if found, EVENT_TIMEOUT if timed out,
+   * error otherwise
+   */
+  template<typename Dt>
+  error::Result<Event> read(auto&& pred,
+                            const std::chrono::duration<Dt>& timeout)
+  {
+    std::unique_lock<std::mutex> lock(_lock);
+
+    if (!_cv.wait_for(lock, timeout, [this, &pred]() {
+          return std::any_of(_events.begin(), _events.end(), pred);
+        })) {
+      return error::err(error::ErrorCode::EVENT_TIMEOUT,
+                        "Timeout waiting for event");
+    }
+
+    if (auto it = std::find_if(_events.begin(), _events.end(), pred);
+        it != _events.end()) {
+      auto event = std::move(*it);
+      _events.erase(it);
+      return event;
+    }
+
+    return error::err(error::ErrorCode::EVENT_NOT_FOUND,
+                      "Requested event not found");
+  }
+
+  /**
+   * @brief Push an event to the event queue
+   *
+   * @param event event to push
+   */
   void push(const Event& event);
 
+  /**
+   * @brief Push an event to the event queue
+   *
+   * @tparam Args event constructor argument types
+   * @param args event constructor arguments
+   */
   template<typename... Args>
   void emplace(Args&&... args)
   {
