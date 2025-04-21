@@ -1,1 +1,7 @@
-terminal_src = files('ansi.cpp', 'cursor.cpp', 'document.cpp', 'event.cpp')
+terminal_src = files(
+  'event/parser.cpp',
+  'event/reader.cpp',
+  'ansi.cpp',
+  'cursor.cpp',
+  'document.cpp',
+)
