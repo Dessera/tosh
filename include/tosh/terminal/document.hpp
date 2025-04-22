@@ -2,12 +2,14 @@
 
 #include "tosh/common.hpp"
 #include "tosh/error.hpp"
+#include "tosh/terminal/event/parser.hpp"
 #include "tosh/terminal/terminal.hpp"
 
 #include <cstddef>
 #include <cstdio>
 #include <list>
 #include <string>
+#include <vector>
 
 namespace tosh::terminal {
 
@@ -18,8 +20,8 @@ private:
 
   Terminal _term;
 
-  std::string _buffer;
-  std::size_t _cpos;
+  std::vector<std::string> _buffer;
+  TermCursor _cpos{ .x = 0, .y = 0 };
 
   TermCursor _wsize;
 
@@ -27,7 +29,7 @@ public:
   Document(std::FILE* out, std::FILE* in, std::string prompt);
   ~Document();
 
-  error::Result<std::string> gets();
+  error::Result<Event> get_op();
 
   /**
    * @brief Insert a character at the cursor position
@@ -43,7 +45,7 @@ public:
    * @param n Number of positions to move backward
    * @return error::Result<void>
    */
-  error::Result<void> backward(std::size_t n = 1);
+  error::Result<void> backward();
 
   /**
    * @brief Move the cursor forward
@@ -68,6 +70,15 @@ public:
   error::Result<void> leave();
 
   error::Result<void> resize(const TermCursor& size);
+
+private:
+  /**
+   * @brief Rebuild the buffer starting from a given position
+   *
+   * @param start Position to start from
+   */
+  void rebuild_buffer(size_t start);
+  bool fixup_cursor(TermCursor& cursor) const;
 };
 
 }

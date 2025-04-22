@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -26,10 +27,23 @@ struct EventGetCursor
   std::size_t y;
 };
 
+struct EventMoveCursor
+{
+  enum class Direction : uint8_t
+  {
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT
+  };
+
+  Direction direction;
+};
+
 /**
  * @brief Event type.
  */
-using Event = std::variant<EventGetString, EventGetCursor>;
+using Event = std::variant<EventGetString, EventGetCursor, EventMoveCursor>;
 
 /**
  * @brief Parses a string into an event.

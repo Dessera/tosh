@@ -2,6 +2,7 @@
 
 #include "tosh/common.hpp"
 #include "tosh/error.hpp"
+#include "tosh/terminal/event/parser.hpp"
 #include "tosh/terminal/event/reader.hpp"
 
 #include <cstddef>
@@ -161,7 +162,7 @@ public:
     return print_impl(fmt, std::forward<Args>(args)...);
   }
 
-  error::Result<std::string> gets();
+  error::Result<Event> get_op();
 
   /**
    * @brief Enable raw mode

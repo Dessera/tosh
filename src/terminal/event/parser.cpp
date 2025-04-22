@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <iostream>
 
 namespace {
 
@@ -44,12 +45,22 @@ parse(std::string_view input)
   assert(!input.empty());
 
   if (!input.starts_with('\x1b')) {
+    std::cerr << input << '\n';
     return EventGetString{ std::string(input) };
   }
 
+  std::cerr << input.substr(1) << '\n';
   switch (input.back()) {
     case 'R':
       return parse_get_cursor(input);
+    case 'A':
+      return EventMoveCursor{ EventMoveCursor::Direction::UP };
+    case 'B':
+      return EventMoveCursor{ EventMoveCursor::Direction::DOWN };
+    case 'C':
+      return EventMoveCursor{ EventMoveCursor::Direction::RIGHT };
+    case 'D':
+      return EventMoveCursor{ EventMoveCursor::Direction::LEFT };
     default:
       return std::nullopt;
   }

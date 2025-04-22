@@ -1,5 +1,6 @@
 #include "tosh/terminal/document.hpp"
 #include "tosh/error.hpp"
+#include "tosh/terminal/event/parser.hpp"
 #include "tosh/terminal/terminal.hpp"
 
 #include <cassert>
@@ -20,66 +21,93 @@ Document::Document(std::FILE* out, std::FILE* in, std::string prompt)
 
 Document::~Document() {}
 
-error::Result<std::string>
-Document::gets()
+error::Result<Event>
+Document::get_op()
 {
-  return _term.gets();
+  return _term.get_op();
 }
 
 error::Result<void>
 Document::insert(char c)
 {
-  // assert(_cursor <= _buffer.size());
+  assert(_cpos.y < _buffer.size());
+  assert(_cpos.x <= _buffer.at(_cpos.y).size());
+  assert((c >= ' ' && c <= '~') || c == '\n');
 
-  ANSIHideGuard hide{ _term };
+  namespace views = std::ranges::views;
+  namespace ranges = std::ranges;
 
-  // auto precur = UNWRAPERR(_term.cursor());
-  // auto poscur = precur;
+  auto precur = UNWRAPERR(_term.cursor());
 
-  // _buffer.insert(_cursor, 1, c);
-  // _cursor++;
+  _buffer.at(_cpos.y).insert(_cpos.x, 1, c);
+  rebuild_buffer(_cpos.y);
 
-  // RETERR(_term.putc(c));
+  // auto& line = _buffer.at(_cpos.y);
 
-  // auto fcur = UNWRAPERR(_term.cursor());
-  // cursor_fixup(fcur);
+  auto bufline_sz = _buffer.size() - _cpos.y;
 
-  // RETERR(_term.cursor(fcur));
+  RETERR(_term.putc('\r'));
+  RETERR(_term.clean(CleanType::TOEND));
 
-  // auto vcur = get_vcursor_from_pos(_cursor);
+  auto str =
+    _buffer | views::drop(_cpos.y) | views::join | ranges::to<std::string>();
+  RETERR(_term.puts(str));
 
-  // RETERR(_term.up(vcur.y, true));
-  // RETERR(_term.puts(_prompt));
+  auto endcur = UNWRAPERR(_term.cursor());
+  fixup_cursor(endcur);
 
-  // RETERR(_term.clean(CleanType::TOEND));
-  // RETERR(_term.puts(_buffer));
+  auto ioline_sz = endcur.y - precur.y + 1;
+  auto loffs = bufline_sz - ioline_sz;
 
-  // RETERR(_term.cursor(fcur));
+  _cpos.x++;
+  precur.x++;
+  if (_cpos.x >= _wsize.x || _buffer.at(_cpos.y).at(_cpos.x - 1) == '\n') {
+    _cpos.x = 0;
+    _cpos.y++;
 
-  // return {};
+    if (precur.x == endcur.x && precur.y == endcur.y) {
+      _term.putc('\n');
+    }
+    precur.x = 0;
+    precur.y++;
+  }
+
+  if (_cpos.y >= _buffer.size()) {
+    _buffer.emplace_back();
+  }
+
+  precur.y -= loffs;
+
+  RETERR(_term.cursor(precur));
+
+  return {};
 }
 
 error::Result<void>
-Document::backward(std::size_t n)
+Document::backward()
 {
   // assert(_cursor <= _buffer.size());
+  auto pcur = UNWRAPERR(_term.cursor());
+  if (_cpos.x == 0) {
+    if (_cpos.y != 0) {
+      _cpos.y--;
+      pcur.y--;
 
-  // auto vcur = calc_vcursor(0, _cursor);
+      _cpos.x = _buffer.at(_cpos.y).size();
+      // if this is a '\n', then we need to move one more back
+      if (_buffer.at(_cpos.y).at(_cpos.x - 1) == '\n') {
+        _cpos.x--;
+      }
+    }
+  } else {
+    _cpos.x--;
+  }
 
-  // ANSIHideGuard hide(_term);
+  pcur.x = _cpos.x;
 
-  // RETERR(_term.up(vcur.y, true));
-  // RETERR(_term.puts(_prompt));
+  RETERR(_term.cursor(pcur));
 
-  // _cursor = _cursor < n ? 0 : _cursor - n;
-  // RETERR(_term.puts(_buffer.substr(0, _cursor)));
-
-  // auto pcur = UNWRAPERR(_term.cursor());
-  // cursor_fixup(pcur);
-
-  // RETERR(_term.cursor(pcur));
-
-  // return {};
+  return {};
 }
 
 error::Result<void>
@@ -110,10 +138,13 @@ Document::enter()
 {
   RETERR(_term.enable());
 
-  auto _ = _term.puts(_prompt);
+  // auto _ = _term.puts(_prompt);
 
   _buffer.clear();
-  _cpos = 0;
+  _buffer.emplace_back();
+
+  _cpos.x = 0;
+  _cpos.y = 0;
 
   return {};
 }
@@ -126,6 +157,54 @@ Document::leave()
   RETERR(_term.disable());
 
   return {};
+}
+
+void
+Document::rebuild_buffer(size_t start)
+{
+  namespace views = std::ranges::views;
+  namespace ranges = std::ranges;
+
+  auto str =
+    _buffer | views::drop(start) | views::join | ranges::to<std::string>();
+
+  // erase old buffer
+  _buffer.erase(_buffer.begin() + start, _buffer.end());
+
+  std::string line{};
+  for (auto c : str) {
+    line.push_back(c);
+    if (line.size() >= _wsize.x) {
+      _buffer.push_back(line);
+      line.clear();
+      continue;
+    }
+
+    if (c == '\n') {
+      _buffer.push_back(line);
+      line.clear();
+    }
+  }
+
+  _buffer.push_back(line);
+}
+
+bool
+Document::fixup_cursor(TermCursor& cursor) const
+{
+  if (cursor.x >= _wsize.x) {
+    cursor.y += cursor.x / _wsize.x;
+    cursor.x %= _wsize.x;
+  }
+
+  if (cursor.y >= _wsize.y) {
+    cursor.y = _wsize.y - 1;
+    cursor.x = 0;
+
+    return true;
+  }
+
+  return false;
 }
 
 // error::Result<void>
@@ -143,5 +222,4 @@ Document::leave()
 
 //   return {};
 // }
-
 }

@@ -191,15 +191,21 @@ Terminal::puts(std::string_view str)
   return puts_impl(str);
 }
 
-error::Result<std::string>
-Terminal::gets()
+error::Result<Event>
+Terminal::get_op()
 {
-  auto event = UNWRAPERR(_reader.read(EventFilter<EventGetString>()));
-  if (auto* eptr = std::get_if<EventGetString>(&event); eptr != nullptr) {
-    return eptr->str;
-  }
+  using namespace std::chrono_literals;
 
-  return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  while (true) {
+    auto res = _reader.read(EventFilter<EventGetString, EventMoveCursor>(), 2s);
+    if (!res.has_value() &&
+        res.error().code() == error::ErrorCode::EVENT_TIMEOUT) {
+      continue;
+    }
+
+    auto event = UNWRAPERR(res);
+    return event;
+  }
 }
 
 error::Result<void>
