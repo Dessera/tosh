@@ -57,10 +57,10 @@ enum class TOSH_EXPORT ErrorCode : uint8_t
 
   ENV_INVALID,
 
-  UNEXPECTED_IO_STATUS,
-  EVENT_LOOP_FAILED,
-  EVENT_NOT_FOUND,
-  EVENT_TIMEOUT,
+  UNEXPECTED_IO_STATUS, // all io exception
+  EVENT_LOOP_FAILED,    // error in event loop
+  EVENT_NOT_FOUND,      // event not found
+  EVENT_TIMEOUT,        // event timeout
 
   UNKNOWN
 };

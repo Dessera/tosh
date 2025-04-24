@@ -19,6 +19,9 @@ struct TermCursor
   std::size_t y;
 };
 
+bool
+operator==(const TermCursor& lhs, const TermCursor& rhs) noexcept;
+
 enum class CleanType : uint8_t
 {
   TOEND,

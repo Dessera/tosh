@@ -11,6 +11,12 @@
 
 namespace tosh::terminal {
 
+bool
+operator==(const TermCursor& lhs, const TermCursor& rhs) noexcept
+{
+  return lhs.x == rhs.x && lhs.y == rhs.y;
+}
+
 // NOLINTNEXTLINE
 Terminal::Terminal(std::FILE* out, std::FILE* in)
   : _out(out)
@@ -34,19 +40,13 @@ Terminal::cursor()
   using namespace std::chrono_literals;
 
   RETERR(puts_impl("\x1b[6n"));
+  auto event = UNWRAPERR(_reader.read(EventFilter<EventGetCursor>(), 2s));
 
-  while (true) {
-    auto res = _reader.read(EventFilter<EventGetCursor>(), 2s);
-    if (!res.has_value() &&
-        res.error().code() == error::ErrorCode::EVENT_TIMEOUT) {
-      continue;
-    }
-
-    auto event = UNWRAPERR(res);
-    if (auto* eptr = std::get_if<EventGetCursor>(&event); eptr != nullptr) {
-      return TermCursor{ .x = eptr->x, .y = eptr->y };
-    }
+  if (auto* eptr = std::get_if<EventGetCursor>(&event); eptr != nullptr) {
+    return TermCursor{ .x = eptr->x, .y = eptr->y };
   }
+
+  return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
 }
 
 error::Result<TermCursor>
@@ -194,18 +194,9 @@ Terminal::puts(std::string_view str)
 error::Result<Event>
 Terminal::get_op()
 {
-  using namespace std::chrono_literals;
-
-  while (true) {
-    auto res = _reader.read(EventFilter<EventGetString, EventMoveCursor>(), 2s);
-    if (!res.has_value() &&
-        res.error().code() == error::ErrorCode::EVENT_TIMEOUT) {
-      continue;
-    }
-
-    auto event = UNWRAPERR(res);
-    return event;
-  }
+  auto event = UNWRAPERR(_reader.read(
+    EventFilter<EventGetString, EventSpecialKey, EventMoveCursor>()));
+  return event;
 }
 
 error::Result<void>

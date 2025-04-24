@@ -1,3 +1,4 @@
+#include "tosh/error.hpp"
 #include "tosh/terminal/document.hpp"
 #include "tosh/terminal/event/parser.hpp"
 #include <cstdio>
@@ -10,28 +11,43 @@ main()
   using tosh::terminal::Document;
   using tosh::terminal::EventGetString;
   using tosh::terminal::EventMoveCursor;
+  using tosh::terminal::EventSpecialKey;
 
   Document doc{ stdout, stdin, "$ " };
 
-  doc.enter();
-
   while (true) {
-    auto op = doc.get_op().value();
+    LOGERR_EXIT(doc.enter());
 
-    if (auto* s = std::get_if<EventGetString>(&op); s != nullptr) {
-      for (auto c : s->str) {
-        doc.insert(c);
+    while (true) {
+      auto res = doc.get_op();
+      if (!res.has_value()) {
+        res.error().log();
+        break;
       }
-    } else if (auto* c = std::get_if<EventMoveCursor>(&op); c != nullptr) {
-      switch (c->direction) {
-        case EventMoveCursor::Direction::LEFT:
-          doc.backward();
-          break;
-        default:
-          break;
+
+      auto op = res.value();
+
+      if (auto* s = std::get_if<EventGetString>(&op); s != nullptr) {
+        for (auto c : s->str) {
+          if (auto res = doc.insert(c); !res.has_value()) {
+            res.error().log();
+            goto error;
+          }
+        }
+      } else if (auto* c = std::get_if<EventMoveCursor>(&op); c != nullptr) {
+        if (c->direction == EventMoveCursor::Direction::LEFT) {
+          auto _ = doc.backward();
+        } else if (c->direction == EventMoveCursor::Direction::RIGHT) {
+          auto _ = doc.forward();
+        }
+      } else if (auto* c = std::get_if<EventSpecialKey>(&op); c != nullptr) {
+        if (c->key == EventSpecialKey::Key::BACKSPACE) {
+          auto _ = doc.remove();
+        }
       }
     }
-  }
 
-  doc.leave();
+  error:
+    doc.leave();
+  }
 }

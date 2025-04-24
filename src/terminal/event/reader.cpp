@@ -10,9 +10,28 @@
 namespace tosh::terminal {
 
 EventReader::EventReader(std::FILE* in)
-  : _base(create_base(in))
-  , _eloop(handle_event_loop, this)
+  : _base(event_base_new())
+  , _event(nullptr)
 {
+  if (_base == nullptr) {
+    throw error::raw_err(error::ErrorCode::EVENT_LOOP_FAILED);
+  }
+
+  auto in_fd = fileno(in);
+  if (in_fd == -1) {
+    throw error::raw_err(error::ErrorCode::EVENT_LOOP_FAILED);
+  }
+
+  _event = event_new(_base, in_fd, EV_READ | EV_PERSIST, handle_event, this);
+  if (_event == nullptr) {
+    throw error::raw_err(error::ErrorCode::EVENT_LOOP_FAILED);
+  }
+
+  if (event_add(_event, nullptr) == -1) {
+    throw error::raw_err(error::ErrorCode::EVENT_LOOP_FAILED);
+  }
+
+  _eloop = std::thread(handle_event_loop, this);
 }
 
 EventReader::~EventReader()
@@ -22,6 +41,7 @@ EventReader::~EventReader()
     _eloop.join();
   }
 
+  event_free(_event);
   event_base_free(_base);
 }
 
@@ -33,35 +53,6 @@ EventReader::push(const Event& event)
     _events.push_back(event);
   }
   _cv.notify_one();
-}
-
-event_base*
-EventReader::create_base(std::FILE* in)
-{
-  assert(in != nullptr);
-
-  int in_fd = fileno(in);
-  if (in_fd == -1) {
-    throw error::raw_err(error::ErrorCode::EVENT_LOOP_FAILED);
-  }
-
-  auto* base = event_base_new();
-  if (base == nullptr) {
-    throw error::raw_err(error::ErrorCode::EVENT_LOOP_FAILED);
-  }
-
-  auto* ev = event_new(
-    base, in_fd, EV_READ | EV_PERSIST, EventReader::handle_event, this);
-  if (ev == nullptr) {
-    throw error::raw_err(error::ErrorCode::EVENT_LOOP_FAILED);
-  }
-
-  if (event_add(ev, nullptr) == -1) {
-    event_free(ev);
-    throw error::raw_err(error::ErrorCode::EVENT_LOOP_FAILED);
-  }
-
-  return base;
 }
 
 void

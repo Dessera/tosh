@@ -1,8 +1,8 @@
 #include "tosh/terminal/event/parser.hpp"
+#include "magic_enum/magic_enum.hpp"
 
 #include <cassert>
 #include <cstddef>
-#include <iostream>
 
 namespace {
 
@@ -45,11 +45,14 @@ parse(std::string_view input)
   assert(!input.empty());
 
   if (!input.starts_with('\x1b')) {
-    std::cerr << input << '\n';
+    if (auto key = magic_enum::enum_cast<EventSpecialKey::Key>(input.front());
+        key.has_value()) {
+      return EventSpecialKey{ key.value() };
+    }
+
     return EventGetString{ std::string(input) };
   }
 
-  std::cerr << input.substr(1) << '\n';
   switch (input.back()) {
     case 'R':
       return parse_get_cursor(input);

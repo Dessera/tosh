@@ -7,8 +7,8 @@
 
 #include <cstddef>
 #include <cstdio>
-#include <list>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace tosh::terminal {
@@ -40,20 +40,27 @@ public:
   error::Result<void> insert(char c);
 
   /**
+   * @brief Remove a character at the cursor position
+   *
+   * @return error::Result<void> Operation result
+   */
+  error::Result<void> remove();
+
+  /**
    * @brief Move the cursor backward
    *
-   * @param n Number of positions to move backward
    * @return error::Result<void>
+   * @warning This function cannot handle scrolling
    */
   error::Result<void> backward();
 
   /**
    * @brief Move the cursor forward
    *
-   * @param n Number of positions to move forward
    * @return error::Result<void> Operation result
+   * @warning This function cannot handle scrolling
    */
-  error::Result<void> forward(std::size_t n = 1);
+  error::Result<void> forward();
 
   /**
    * @brief Start a new command
@@ -78,7 +85,16 @@ private:
    * @param start Position to start from
    */
   void rebuild_buffer(size_t start);
-  bool fixup_cursor(TermCursor& cursor) const;
+
+  /**
+   * @brief Fixup the cursor position
+   *
+   * @param cursor Cursor to fixup
+   * @return std::pair<bool, bool> If the cursor was fixupped in x and y
+   */
+  std::pair<bool, bool> fixup_cursor(TermCursor& cursor) const;
+
+  [[nodiscard]] TermCursor prompt_cursor() const;
 };
 
 }

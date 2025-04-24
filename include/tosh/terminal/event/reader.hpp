@@ -22,6 +22,7 @@ public:
 
 private:
   event_base* _base;
+  event* _event;
   std::thread _eloop;
 
   std::deque<Event> _events;
@@ -98,26 +99,7 @@ public:
    */
   void push(const Event& event);
 
-  /**
-   * @brief Push an event to the event queue
-   *
-   * @tparam Args event constructor argument types
-   * @param args event constructor arguments
-   */
-  template<typename... Args>
-  void emplace(Args&&... args)
-  {
-    {
-      std::lock_guard<std::mutex> lock(_lock);
-      _events.emplace_back(std::forward<Args>(args)...);
-    }
-    _cv.notify_one();
-  }
-
 private:
-  event_base* create_base(std::FILE* in);
-  std::thread create_event_loop();
-
   static void handle_event_loop(EventReader* reader);
   static void handle_event(evutil_socket_t fd, short events, void* arg);
 };

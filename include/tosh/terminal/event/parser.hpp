@@ -40,10 +40,22 @@ struct EventMoveCursor
   Direction direction;
 };
 
+struct EventSpecialKey
+{
+  enum class Key : uint8_t
+  {
+    TAB = 9,
+    BACKSPACE = 127,
+  };
+
+  Key key;
+};
+
 /**
  * @brief Event type.
  */
-using Event = std::variant<EventGetString, EventGetCursor, EventMoveCursor>;
+using Event = std::
+  variant<EventGetString, EventGetCursor, EventMoveCursor, EventSpecialKey>;
 
 /**
  * @brief Parses a string into an event.
