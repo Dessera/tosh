@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <expected>
 #include <limits>
 #include <ranges>
 #include <utility>
@@ -12,20 +13,14 @@
 
 namespace tosh::terminal {
 
-Document::Document(std::FILE* out, std::FILE* in, std::string prompt)
+Document::Document(Terminal term, std::string prompt)
   : _prompt(std::move(prompt))
-  , _term(out, in)
+  , _term(std::move(term))
   , _wsize(_term.unsafe_winsize())
 {
 }
 
 Document::~Document() = default;
-
-error::Result<Event>
-Document::get_op()
-{
-  return _term.get_op();
-}
 
 error::Result<void>
 Document::insert(char c)
@@ -48,7 +43,7 @@ Document::insert(char c)
   // real line size to be printed
   auto bufline_sz = _buffer.size() - _cpos.y;
 
-  ANSIHideGuard guard{ _term };
+  TermCursorHideGuard guard{ _term };
 
   RETERR(_term.putc('\r'));
   RETERR(_term.clean(CleanType::TOEND));
@@ -235,6 +230,40 @@ Document::leave()
   RETERR(_term.disable());
 
   return {};
+}
+
+error::Result<void>
+Document::resize()
+{
+  auto precur = UNWRAPERR(_term.cursor());
+  if (precur.y >= _cpos.y) {
+    precur.y -= _cpos.y;
+  } else {
+    precur.y = 0;
+  }
+
+  precur.x = 0;
+
+  RETERR(_term.cursor(precur));
+
+  _wsize = UNWRAPERR(_term.winsize());
+  rebuild_buffer(0);
+
+  _cpos.y = _buffer.size() - 1;
+  _cpos.x = _buffer.back().size();
+
+  return {};
+}
+
+error::Result<Document>
+Document::create(std::FILE* out, std::FILE* in, std::string prompt)
+{
+  auto term = Terminal::create(out, in);
+  if (!term.has_value()) {
+    return std::unexpected(term.error());
+  }
+
+  return Document{ std::move(term.value()), std::move(prompt) };
 }
 
 void

@@ -2,103 +2,78 @@
 
 #include "tosh/common.hpp"
 #include "tosh/error.hpp"
-#include "tosh/terminal/event/parser.hpp"
+#include "tosh/terminal/event/queue.hpp"
 
-#include <condition_variable>
 #include <cstddef>
 #include <cstdio>
-#include <deque>
 #include <event2/event.h>
-#include <mutex>
+#include <memory>
+#include <thread>
 
 namespace tosh::terminal {
+
+struct EventBaseCleaner
+{
+  constexpr void operator()(event_base* base) const { event_base_free(base); }
+};
+
+using EventBasePtr = std::unique_ptr<event_base, EventBaseCleaner>;
+
+struct EventCleaner
+{
+  constexpr void operator()(event* ev) const { event_free(ev); }
+};
+
+using EventPtr = std::unique_ptr<event, EventCleaner>;
 
 /**
  * @brief Stdin event reader
  */
-class TOSH_EXPORT EventReader
+class EventReader
 {
 public:
   constexpr static size_t EVBUFSIZ = 256;
 
 private:
-  event_base* _base;
-  event* _event;
-  std::thread _eloop;
+  EventBasePtr _base;
+  EventPtr _event;
+  std::unique_ptr<EventQueue> _queue;
 
-  std::deque<Event> _events;
-
-  std::mutex _lock;
-  std::condition_variable _cv;
+  std::unique_ptr<std::jthread> _eloop{ nullptr };
 
 public:
-  EventReader(std::FILE* in);
+  EventReader(EventBasePtr base, EventPtr ev);
   ~EventReader();
 
-  /**
-   * @brief Reads an event which matches the predicate
-   *
-   * @param pred predicate to match events
-   * @return error::Result<Event> event if found, error otherwise
-   */
-  error::Result<Event> read(auto&& pred)
+  TOSH_DELETE_COPY(EventReader)
+  TOSH_DEFAULT_MOVE(EventReader)
+
+  constexpr auto read(auto&& pred, auto&& timeout)
   {
-    std::unique_lock<std::mutex> lock(_lock);
+    return _queue->read(std::forward<decltype(pred)>(pred),
+                        std::forward<decltype(timeout)>(timeout));
+  }
 
-    _cv.wait(lock, [this, &pred]() {
-      return std::any_of(_events.begin(), _events.end(), pred);
-    });
-
-    if (auto it = std::find_if(_events.begin(), _events.end(), pred);
-        it != _events.end()) {
-      auto event = std::move(*it);
-      _events.erase(it);
-      return event;
-    }
-
-    [[unlikely]] return error::err(error::ErrorCode::EVENT_NOT_FOUND,
-                                   "Requested event not found");
+  constexpr auto read(auto&& pred)
+  {
+    return _queue->read(std::forward<decltype(pred)>(pred));
   }
 
   /**
-   * @brief Reads an event which matches the predicate
+   * @brief Start the event loop
    *
-   * @tparam Dt duration type
-   * @param pred predicate to match events
-   * @param timeout read timeout
-   * @return error::Result<Event> event if found, EVENT_TIMEOUT if timed out,
-   * error otherwise
+   * @return error::Result<void> Operation result
    */
-  template<typename Dt>
-  error::Result<Event> read(auto&& pred,
-                            const std::chrono::duration<Dt>& timeout)
-  {
-    std::unique_lock<std::mutex> lock(_lock);
-
-    if (!_cv.wait_for(lock, timeout, [this, &pred]() {
-          return std::any_of(_events.begin(), _events.end(), pred);
-        })) {
-      return error::err(error::ErrorCode::EVENT_TIMEOUT,
-                        "Timeout waiting for event");
-    }
-
-    if (auto it = std::find_if(_events.begin(), _events.end(), pred);
-        it != _events.end()) {
-      auto event = std::move(*it);
-      _events.erase(it);
-      return event;
-    }
-
-    [[unlikely]] return error::err(error::ErrorCode::EVENT_NOT_FOUND,
-                                   "Requested event not found");
-  }
+  error::Result<void> start();
 
   /**
-   * @brief Push an event to the event queue
+   * @brief Stop the event loop
    *
-   * @param event event to push
+   * @return error::Result<void> Operation result
    */
-  void push(const Event& event);
+  error::Result<void> stop();
+
+  static error::Result<EventReader> create(std::FILE* in);
 
 private:
   static void handle_event_loop(EventReader* reader);

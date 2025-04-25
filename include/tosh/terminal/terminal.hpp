@@ -5,6 +5,7 @@
 #include "tosh/terminal/event/parser.hpp"
 #include "tosh/terminal/event/reader.hpp"
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -31,6 +32,9 @@ enum class CleanType : uint8_t
 
 class Terminal
 {
+public:
+  constexpr static auto TERM_TIMEOUT = std::chrono::seconds(2);
+
 private:
   std::FILE* _out;
   std::FILE* _in;
@@ -38,8 +42,11 @@ private:
   EventReader _reader;
 
 public:
-  Terminal(std::FILE* out, std::FILE* in);
+  Terminal(std::FILE* out, std::FILE* in, EventReader reader);
   ~Terminal();
+
+  TOSH_DELETE_COPY(Terminal)
+  TOSH_DEFAULT_MOVE(Terminal)
 
   /**
    * @brief Get the terminal cursor
@@ -181,6 +188,8 @@ public:
    */
   error::Result<void> disable();
 
+  static error::Result<Terminal> create(std::FILE* out, std::FILE* in);
+
 private:
   error::Result<void> putc_impl(char c);
   error::Result<void> puts_impl(std::string_view str);
@@ -197,19 +206,19 @@ private:
   }
 };
 
-class TOSH_EXPORT ANSIHideGuard
+class TermCursorHideGuard
 {
 private:
   Terminal* _port;
 
 public:
-  ANSIHideGuard(Terminal& port);
-  ~ANSIHideGuard();
+  TermCursorHideGuard(Terminal& port);
+  ~TermCursorHideGuard();
 
-  ANSIHideGuard(const ANSIHideGuard&) = delete;
-  ANSIHideGuard& operator=(const ANSIHideGuard&) = delete;
-  ANSIHideGuard(ANSIHideGuard&&) = delete;
-  ANSIHideGuard& operator=(ANSIHideGuard&&) = delete;
+  TermCursorHideGuard(const TermCursorHideGuard&) = delete;
+  TermCursorHideGuard& operator=(const TermCursorHideGuard&) = delete;
+  TermCursorHideGuard(TermCursorHideGuard&&) = delete;
+  TermCursorHideGuard& operator=(TermCursorHideGuard&&) = delete;
 };
 
 }

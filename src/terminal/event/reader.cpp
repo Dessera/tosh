@@ -1,72 +1,90 @@
 #include "tosh/terminal/event/reader.hpp"
+#include "tosh/error.hpp"
+#include "tosh/terminal/event/queue.hpp"
 
 #include <array>
 #include <cassert>
 #include <cstdio>
 #include <event2/event.h>
+#include <expected>
+#include <memory>
 #include <string_view>
 #include <unistd.h>
+#include <utility>
 
 namespace tosh::terminal {
 
-EventReader::EventReader(std::FILE* in)
-  : _base(event_base_new())
-  , _event(nullptr)
+EventReader::EventReader(EventBasePtr base, EventPtr ev)
+  : _base(std::move(base))
+  , _event(std::move(ev))
 {
-  if (_base == nullptr) {
-    throw error::raw_err(error::ErrorCode::EVENT_LOOP_FAILED);
-  }
-
-  auto in_fd = fileno(in);
-  if (in_fd == -1) {
-    throw error::raw_err(error::ErrorCode::EVENT_LOOP_FAILED);
-  }
-
-  _event = event_new(_base, in_fd, EV_READ | EV_PERSIST, handle_event, this);
-  if (_event == nullptr) {
-    throw error::raw_err(error::ErrorCode::EVENT_LOOP_FAILED);
-  }
-
-  if (event_add(_event, nullptr) == -1) {
-    throw error::raw_err(error::ErrorCode::EVENT_LOOP_FAILED);
-  }
-
-  _eloop = std::thread(handle_event_loop, this);
 }
 
 EventReader::~EventReader()
 {
-  event_base_loopbreak(_base);
-  if (_eloop.joinable()) {
-    _eloop.join();
+  if (_eloop != nullptr) {
+    event_base_loopbreak(_base.get());
   }
-
-  event_free(_event);
-  event_base_free(_base);
 }
 
-void
-EventReader::push(const Event& event)
+error::Result<EventReader>
+EventReader::create(std::FILE* in)
 {
-  {
-    std::lock_guard<std::mutex> lock(_lock);
-    _events.push_back(event);
+  assert(in != nullptr);
+
+  auto queue = std::make_unique<EventQueue>();
+
+  auto base = EventBasePtr(event_base_new());
+  if (base == nullptr) {
+    return error::err(error::ErrorCode::EVENT_LOOP_FAILED);
   }
-  _cv.notify_one();
+
+  auto ev = EventPtr(event_new(
+    base.get(), fileno(in), EV_READ | EV_PERSIST, handle_event, queue.get()));
+  if (ev == nullptr) {
+    return error::err(error::ErrorCode::EVENT_LOOP_FAILED);
+  }
+
+  if (event_add(ev.get(), nullptr) == -1) {
+    return error::err(error::ErrorCode::EVENT_LOOP_FAILED);
+  }
+
+  return EventReader{ std::move(base), std::move(ev) };
+}
+
+error::Result<void>
+EventReader::start()
+try {
+  _eloop = std::make_unique<std::jthread>(handle_event_loop, this);
+  return {};
+} catch (const std::exception& e) {
+  return error::err(error::ErrorCode::EVENT_LOOP_FAILED, e.what());
+}
+
+error::Result<void>
+EventReader::stop()
+{
+  event_base_loopbreak(_base.get());
+
+  if (_eloop != nullptr) {
+    _eloop = nullptr;
+  }
+
+  return {};
 }
 
 void
 EventReader::handle_event_loop(EventReader* reader)
 {
   assert(reader != nullptr);
-  event_base_dispatch(reader->_base);
+  event_base_dispatch(reader->_base.get());
 }
 
 void
 EventReader::handle_event(evutil_socket_t fd, short event, void* arg)
 {
   assert(arg != nullptr);
-  EventReader* reader = static_cast<EventReader*>(arg);
+  auto* queue = static_cast<EventQueue*>(arg);
 
   if (!(event & EV_READ)) {
     return;
@@ -80,7 +98,7 @@ EventReader::handle_event(evutil_socket_t fd, short event, void* arg)
 
   if (auto payload = parse(std::string_view(buf.data(), n));
       payload.has_value()) {
-    reader->push(payload.value());
+    queue->push(payload.value());
   }
 }
 

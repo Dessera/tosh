@@ -1,10 +1,12 @@
 #include "tosh/terminal/terminal.hpp"
 #include "tosh/error.hpp"
 #include "tosh/terminal/event/parser.hpp"
+#include "tosh/terminal/event/reader.hpp"
 
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
+#include <expected>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -18,10 +20,10 @@ operator==(const TermCursor& lhs, const TermCursor& rhs) noexcept
 }
 
 // NOLINTNEXTLINE
-Terminal::Terminal(std::FILE* out, std::FILE* in)
+Terminal::Terminal(std::FILE* out, std::FILE* in, EventReader reader)
   : _out(out)
   , _in(in)
-  , _reader(in)
+  , _reader(std::move(reader))
 {
   assert(out != nullptr);
   assert(in != nullptr);
@@ -37,26 +39,23 @@ Terminal::~Terminal()
 error::Result<TermCursor>
 Terminal::cursor()
 {
-  using namespace std::chrono_literals;
-
   RETERR(puts_impl("\x1b[6n"));
-  auto event = UNWRAPERR(_reader.read(EventFilter<EventGetCursor>(), 2s));
+  auto event =
+    UNWRAPERR(_reader.read(EventFilter<EventGetCursor>(), TERM_TIMEOUT));
 
   if (auto* eptr = std::get_if<EventGetCursor>(&event); eptr != nullptr) {
     return TermCursor{ .x = eptr->x, .y = eptr->y };
   }
 
-  return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  [[unlikely]] return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
 }
 
 error::Result<TermCursor>
 Terminal::winsize()
 {
-  int _out_fd = fileno(_out);
-
   // NOLINTNEXTLINE
   struct winsize w;
-  if (ioctl(_out_fd, TIOCGWINSZ, &w) == -1) {
+  if (ioctl(fileno(_out), TIOCGWINSZ, &w) == -1) {
     return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
   }
 
@@ -66,15 +65,12 @@ Terminal::winsize()
 TermCursor
 Terminal::unsafe_winsize()
 {
-  int _out_fd = fileno(_out);
-
-  // NOLINTNEXTLINE
-  struct winsize w;
-  if (ioctl(_out_fd, TIOCGWINSZ, &w) == -1) {
-    throw error::raw_err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  auto res = winsize();
+  if (!res.has_value()) {
+    throw error::Error(res.error());
   }
 
-  return TermCursor{ .x = w.ws_col, .y = w.ws_row };
+  return res.value();
 }
 
 error::Result<void>
@@ -257,13 +253,27 @@ Terminal::puts_impl(std::string_view str)
   return {};
 }
 
-ANSIHideGuard::ANSIHideGuard(Terminal& port)
+error::Result<Terminal>
+Terminal::create(std::FILE* out, std::FILE* in)
+{
+  assert(out != nullptr);
+  assert(in != nullptr);
+
+  auto reader = EventReader::create(in);
+  if (!reader.has_value()) {
+    return std::unexpected(reader.error());
+  }
+
+  return Terminal{ out, in, std::move(reader.value()) };
+}
+
+TermCursorHideGuard::TermCursorHideGuard(Terminal& port)
   : _port(&port)
 {
   auto _ = _port->hide();
 }
 
-ANSIHideGuard::~ANSIHideGuard()
+TermCursorHideGuard::~TermCursorHideGuard()
 {
   auto _ = _port->show();
 }

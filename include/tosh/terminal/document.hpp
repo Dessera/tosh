@@ -2,7 +2,6 @@
 
 #include "tosh/common.hpp"
 #include "tosh/error.hpp"
-#include "tosh/terminal/event/parser.hpp"
 #include "tosh/terminal/terminal.hpp"
 
 #include <cstddef>
@@ -23,13 +22,16 @@ private:
   std::vector<std::string> _buffer;
   TermCursor _cpos{ .x = 0, .y = 0 };
 
-  TermCursor _wsize;
+  TermCursor _wsize{ .x = 0, .y = 0 };
 
 public:
-  Document(std::FILE* out, std::FILE* in, std::string prompt);
+  Document(Terminal term, std::string prompt);
   ~Document();
 
-  error::Result<Event> get_op();
+  TOSH_DELETE_COPY(Document)
+  TOSH_DEFAULT_MOVE(Document)
+
+  constexpr auto get_op() { return _term.get_op(); }
 
   /**
    * @brief Insert a character at the cursor position
@@ -76,7 +78,16 @@ public:
    */
   error::Result<void> leave();
 
-  error::Result<void> resize(const TermCursor& size);
+  /**
+   * @brief Resize the terminal with current win size
+   *
+   * @return error::Result<void> Operation result
+   */
+  error::Result<void> resize();
+
+  static error::Result<Document> create(std::FILE* out,
+                                        std::FILE* in,
+                                        std::string prompt);
 
 private:
   /**
@@ -94,6 +105,11 @@ private:
    */
   std::pair<bool, bool> fixup_cursor(TermCursor& cursor) const;
 
+  /**
+   * @brief Get the cursor position for the prompt
+   *
+   * @return TermCursor Cursor position for the prompt
+   */
   [[nodiscard]] TermCursor prompt_cursor() const;
 };
 
