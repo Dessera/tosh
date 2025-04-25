@@ -81,4 +81,7 @@ struct EventFilter
   }
 };
 
+using EventAll =
+  EventFilter<EventGetString, EventGetCursor, EventMoveCursor, EventSpecialKey>;
+
 }

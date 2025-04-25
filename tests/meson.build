@@ -1,8 +1,4 @@
-test_terminal = executable(
-  'test_terminal',
-  'test_terminal.cpp',
-  include_directories: inc,
-  dependencies: deps,
-)
+test_deps = deps
+test_deps += catch2_with_main_dep
 
-test('test_terminal', test_terminal)
+subdir('terminal')

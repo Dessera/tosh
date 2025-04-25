@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tosh/common.hpp"
 #include "tosh/error.hpp"
 #include "tosh/terminal/event/parser.hpp"
 
@@ -15,7 +16,7 @@ namespace tosh::terminal {
 /**
  * @brief Stdin event reader
  */
-class EventReader
+class TOSH_EXPORT EventReader
 {
 public:
   constexpr static size_t EVBUFSIZ = 256;
@@ -55,8 +56,8 @@ public:
       return event;
     }
 
-    return error::err(error::ErrorCode::EVENT_NOT_FOUND,
-                      "Requested event not found");
+    [[unlikely]] return error::err(error::ErrorCode::EVENT_NOT_FOUND,
+                                   "Requested event not found");
   }
 
   /**
@@ -88,8 +89,8 @@ public:
       return event;
     }
 
-    return error::err(error::ErrorCode::EVENT_NOT_FOUND,
-                      "Requested event not found");
+    [[unlikely]] return error::err(error::ErrorCode::EVENT_NOT_FOUND,
+                                   "Requested event not found");
   }
 
   /**

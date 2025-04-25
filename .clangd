@@ -14,6 +14,7 @@ Diagnostics:
       bugprone-forward-declaration-namespace,
       cppcoreguidelines-special-member-functions,
       cppcoreguidelines-pro-type-vararg,
+      cppcoreguidelines-avoid-do-while,
       modernize-use-trailing-return-type,
       modernize-use-auto,
       modernize-use-std-print,
@@ -21,6 +22,7 @@ Diagnostics:
       readability-convert-member-functions-to-static,
       readability-implicit-bool-conversion,
       misc-no-recursion,
+      misc-use-anonymous-namespace,
     ]
 InlayHints:
   BlockEnd: true
