@@ -1,6 +1,5 @@
 #include "tosh/terminal/document.hpp"
 #include "tosh/error.hpp"
-#include "tosh/terminal/event/parser.hpp"
 #include "tosh/terminal/terminal.hpp"
 
 #include <cassert>
@@ -13,14 +12,20 @@
 
 namespace tosh::terminal {
 
-Document::Document(Terminal term, std::string prompt)
+Document::Document(Terminal term, std::string prompt, TermCursor wsize)
   : _prompt(std::move(prompt))
   , _term(std::move(term))
-  , _wsize(_term.unsafe_winsize())
+  , _wsize(wsize)
 {
 }
 
 Document::~Document() = default;
+
+error::Result<Event>
+Document::get_op()
+{
+  return _term.get_op();
+}
 
 error::Result<void>
 Document::insert(char c)
@@ -213,12 +218,13 @@ Document::forward()
 error::Result<void>
 Document::enter()
 {
-  RETERR(_term.enable());
-  RETERR(_term.puts(_prompt));
-
   _buffer.clear();
   _buffer.push_back(_prompt);
+
   _cpos = prompt_cursor();
+
+  RETERR(_term.enable());
+  RETERR(_term.puts(_prompt));
 
   return {};
 }
@@ -235,16 +241,8 @@ Document::leave()
 error::Result<void>
 Document::resize()
 {
-  auto precur = UNWRAPERR(_term.cursor());
-  if (precur.y >= _cpos.y) {
-    precur.y -= _cpos.y;
-  } else {
-    precur.y = 0;
-  }
-
-  precur.x = 0;
-
-  RETERR(_term.cursor(precur));
+  namespace views = std::ranges::views;
+  namespace ranges = std::ranges;
 
   _wsize = UNWRAPERR(_term.winsize());
   rebuild_buffer(0);
@@ -252,7 +250,21 @@ Document::resize()
   _cpos.y = _buffer.size() - 1;
   _cpos.x = _buffer.back().size();
 
+  RETERR(_term.up(_cpos.y, true));
+
+  auto str = _buffer | views::join | ranges::to<std::string>();
+  RETERR(_term.puts(str));
+
   return {};
+}
+
+std::string
+Document::string() const
+{
+  namespace views = std::ranges::views;
+  namespace ranges = std::ranges;
+
+  return _buffer | views::join | ranges::to<std::string>();
 }
 
 error::Result<Document>
@@ -263,7 +275,9 @@ Document::create(std::FILE* out, std::FILE* in, std::string prompt)
     return std::unexpected(term.error());
   }
 
-  return Document{ std::move(term.value()), std::move(prompt) };
+  auto wsize = UNWRAPERR(term.value().winsize());
+
+  return Document{ std::move(term.value()), std::move(prompt), wsize };
 }
 
 void
@@ -342,19 +356,15 @@ Document::prompt_cursor() const
   return { .x = x, .y = y };
 }
 
-// error::Result<void>
-// Document::resize(const TermCursor& size)
-// {
-//   auto vcur = get_vcursor_from_pos(_cursor);
+DocumentGuard::DocumentGuard(Document& doc)
+  : _doc{ &doc }
+{
+  LOGERR_EXIT(_doc->enter());
+}
 
-//   RETERR(_term.up(vcur.y, true));
-//   RETERR(_term.forward(_prompt.size()));
+DocumentGuard::~DocumentGuard()
+{
+  auto _ = _doc->leave();
+}
 
-//   RETERR(_term.puts(_buffer));
-//   auto _ = _term.cleanline(CleanType::TOEND);
-
-//   _wsize = size;
-
-//   return {};
-// }
 }

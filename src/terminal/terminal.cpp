@@ -211,6 +211,8 @@ Terminal::enable()
     return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
   }
 
+  RETERR(_reader.start());
+
   return {};
 }
 
@@ -229,6 +231,8 @@ Terminal::disable()
   if (tcsetattr(_in_fd, TCSANOW, &term) == -1) {
     return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
   }
+
+  RETERR(_reader.stop());
 
   return {};
 }

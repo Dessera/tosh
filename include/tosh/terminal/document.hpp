@@ -2,6 +2,7 @@
 
 #include "tosh/common.hpp"
 #include "tosh/error.hpp"
+#include "tosh/terminal/event/parser.hpp"
 #include "tosh/terminal/terminal.hpp"
 
 #include <cstddef>
@@ -22,16 +23,16 @@ private:
   std::vector<std::string> _buffer;
   TermCursor _cpos{ .x = 0, .y = 0 };
 
-  TermCursor _wsize{ .x = 0, .y = 0 };
+  TermCursor _wsize;
 
 public:
-  Document(Terminal term, std::string prompt);
+  Document(Terminal term, std::string prompt, TermCursor wsize);
   ~Document();
 
   TOSH_DELETE_COPY(Document)
   TOSH_DEFAULT_MOVE(Document)
 
-  constexpr auto get_op() { return _term.get_op(); }
+  error::Result<Event> get_op();
 
   /**
    * @brief Insert a character at the cursor position
@@ -85,6 +86,13 @@ public:
    */
   error::Result<void> resize();
 
+  [[nodiscard]] std::string string() const;
+
+  [[nodiscard]] constexpr bool end() const
+  {
+    return _cpos.y == _buffer.size() - 1 && _cpos.x == _buffer.back().size();
+  }
+
   static error::Result<Document> create(std::FILE* out,
                                         std::FILE* in,
                                         std::string prompt);
@@ -111,6 +119,16 @@ private:
    * @return TermCursor Cursor position for the prompt
    */
   [[nodiscard]] TermCursor prompt_cursor() const;
+};
+
+class TOSH_EXPORT DocumentGuard
+{
+private:
+  Document* _doc;
+
+public:
+  DocumentGuard(Document& doc);
+  ~DocumentGuard();
 };
 
 }

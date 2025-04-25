@@ -14,9 +14,12 @@
 
 namespace tosh::terminal {
 
-EventReader::EventReader(EventBasePtr base, EventPtr ev)
+EventReader::EventReader(EventBasePtr base,
+                         EventPtr ev,
+                         std::unique_ptr<EventQueue> queue)
   : _base(std::move(base))
   , _event(std::move(ev))
+  , _queue(std::move(queue))
 {
 }
 
@@ -49,7 +52,7 @@ EventReader::create(std::FILE* in)
     return error::err(error::ErrorCode::EVENT_LOOP_FAILED);
   }
 
-  return EventReader{ std::move(base), std::move(ev) };
+  return EventReader{ std::move(base), std::move(ev), std::move(queue) };
 }
 
 error::Result<void>

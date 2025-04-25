@@ -10,18 +10,21 @@
 #include "tosh/builtins/type.hpp"
 #include "tosh/error.hpp"
 #include "tosh/parser/parser.hpp"
+#include "tosh/terminal/document.hpp"
 #include "tosh/utils/path.hpp"
 
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <expected>
 #include <filesystem>
-#include <iostream>
 #include <memory>
 #include <print>
 #include <ranges>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -46,7 +49,7 @@ cmdpath_fixup(const fs::path& cmd)
 
 namespace tosh::repl {
 
-Repl::Repl()
+Repl::Repl(terminal::Document doc)
   : _builtins(
       { { "exit",
           std::shared_ptr<builtins::BaseCommand>(new builtins::Exit()) },
@@ -64,16 +67,15 @@ Repl::Repl()
           std::shared_ptr<builtins::BaseCommand>(new builtins::Sete()) },
         { "unsete",
           std::shared_ptr<builtins::BaseCommand>(new builtins::Unsete()) } })
+  , _doc(std::move(doc))
 {
-  std::cout << std::unitbuf;
-  std::cerr << std::unitbuf;
 }
 
 void
 Repl::run()
 {
   while (true) {
-    std::print("{}", get_prompt());
+    terminal::DocumentGuard guard{ _doc };
 
     auto res = _parser.parse(*this);
     if (!res.has_value()) {
@@ -215,12 +217,27 @@ Repl::find_fuzzy(std::string_view command)
 }
 
 void
-Repl::sigint_handler()
+Repl::signal_handler(int sig)
 {
-  if (_subpid != -1) {
-    kill(_subpid, SIGINT);
-    _subpid = -1;
+  if (sig == SIGINT) {
+    if (_subpid != -1) {
+      kill(_subpid, SIGINT);
+      _subpid = -1;
+    }
+  } else if (sig == SIGWINCH) {
+    auto _ = _doc.resize();
   }
+}
+
+error::Result<Repl>
+Repl::create()
+{
+  auto res = terminal::Document::create(stdout, stdin, "$ ");
+  if (!res.has_value()) {
+    return std::unexpected(res.error());
+  }
+
+  return Repl{ std::move(res.value()) };
 }
 
 void
@@ -256,12 +273,6 @@ Repl::run_builtin(parser::ParseQuery& query, const std::string& name)
       res.error().log();
     }
   }
-}
-
-std::string
-Repl::get_prompt()
-{
-  return "$ ";
 }
 
 }

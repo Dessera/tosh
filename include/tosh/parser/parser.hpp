@@ -4,7 +4,6 @@
 #include "tosh/error.hpp"
 #include "tosh/parser/ast/root.hpp"
 #include "tosh/parser/query.hpp"
-#include "tosh/utils/buffer.hpp"
 #include "tosh/utils/redirect.hpp"
 #include <memory>
 #include <vector>
@@ -37,9 +36,9 @@ private:
    * @param root The root node of the AST
    * @param buffer The command buffer
    */
-  void handle_completion(repl::Repl& repl,
-                         ast::Root::Ptr& root,
-                         utils::CommandBuffer& buffer);
+  // void handle_completion(repl::Repl& repl,
+  //                        ast::Root::Ptr& root,
+  //                        utils::CommandBuffer& buffer);
 
   /**
    * @brief Rebuilds the AST
@@ -47,7 +46,7 @@ private:
    * @param root The root node of the AST
    * @param buffer The command buffer
    */
-  void handle_rebuild_ast(ast::Root::Ptr& root, utils::CommandBuffer& buffer);
+  void handle_rebuild_ast(repl::Repl& repl, ast::Root::Ptr& root);
 
   /**
    * @brief Handles the end of the input
@@ -55,7 +54,7 @@ private:
    * @param root The root node of the AST
    * @param buffer The command buffer
    */
-  void handle_cin_eof(ast::Root::Ptr& root, utils::CommandBuffer& buffer);
+  // void handle_cin_eof(ast::Root::Ptr& root, utils::CommandBuffer& buffer);
 
   /**
    * @brief Creates the redirects from the AST

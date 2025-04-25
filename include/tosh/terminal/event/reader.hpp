@@ -42,7 +42,9 @@ private:
   std::unique_ptr<std::jthread> _eloop{ nullptr };
 
 public:
-  EventReader(EventBasePtr base, EventPtr ev);
+  EventReader(EventBasePtr base,
+              EventPtr ev,
+              std::unique_ptr<EventQueue> queue);
   ~EventReader();
 
   TOSH_DELETE_COPY(EventReader)

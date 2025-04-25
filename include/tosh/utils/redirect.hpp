@@ -76,7 +76,7 @@ redirect_str_to_type(std::string_view str)
     REDIRECT_OP_STRS.begin(), std::ranges::find(REDIRECT_OP_STRS, str)));
 }
 
-class TOSH_EXPORT Redirect
+class Redirect
 {
 private:
   int _src;
@@ -108,7 +108,7 @@ public:
   [[nodiscard]] constexpr auto type() const { return _type; }
 };
 
-class TOSH_EXPORT RedirectOperation
+class RedirectOperation
 {
 private:
   Redirect _redirect;
@@ -141,7 +141,7 @@ public:
   [[nodiscard]] constexpr auto& data() const { return _redirect; }
 };
 
-class TOSH_EXPORT RedirectFactory
+class RedirectFactory
 {
 public:
   /**
@@ -153,7 +153,7 @@ public:
   static std::shared_ptr<RedirectOperation> create(const Redirect& redirect);
 };
 
-class TOSH_EXPORT RedirectBasicOperation : public RedirectOperation
+class RedirectBasicOperation : public RedirectOperation
 {
 private:
   bool _append;
@@ -170,7 +170,7 @@ public:
   error::Result<void> restore() override;
 };
 
-class TOSH_EXPORT RedirectMergeOperation : public RedirectOperation
+class RedirectMergeOperation : public RedirectOperation
 {
 private:
   int _fd{ -1 };

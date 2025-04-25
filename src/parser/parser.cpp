@@ -1,4 +1,4 @@
-#include "tosh/parser/parser.hpp"
+#include "tosh/terminal/event/parser.hpp"
 #include "tosh/error.hpp"
 #include "tosh/parser/ast/base.hpp"
 #include "tosh/parser/ast/expr.hpp"
@@ -6,18 +6,17 @@
 #include "tosh/parser/ast/root.hpp"
 #include "tosh/parser/query.hpp"
 #include "tosh/repl.hpp"
-#include "tosh/utils/buffer.hpp"
 #include "tosh/utils/redirect.hpp"
 
 #include <cstdio>
 #include <exception>
-#include <iostream>
 #include <memory>
 #include <print>
 #include <ranges>
 #include <string>
 #include <sys/types.h>
 #include <termios.h>
+#include <variant>
 #include <vector>
 
 namespace {
@@ -55,83 +54,78 @@ namespace tosh::parser {
 error::Result<ParseQuery>
 TokenParser::parse(repl::Repl& repl)
 try {
+  auto& doc = repl.doc();
+
   ast::Root::Ptr root = std::make_shared<ast::Root>();
-  auto buffer = utils::CommandBuffer{ std::cout };
 
   while (true) {
-    char c = buffer.getchar();
+    auto op = UNWRAPERR(doc.get_op());
 
-    if (utils::is_ascii(c) ||
-        utils::is_command(c, utils::CommandType::NEXT_LINE)) {
-      if (!buffer.end()) {
-        handle_rebuild_ast(root, buffer);
-        continue;
+    if (auto* ev = std::get_if<terminal::EventGetString>(&op); ev != nullptr) {
+      for (auto c : ev->str) {
+        RETERR(doc.insert(c));
       }
-
-      if (root->parse_next(c) == ast::ParseState::END) {
-        break;
+      handle_rebuild_ast(repl, root);
+    } else if (auto* ev = std::get_if<terminal::EventMoveCursor>(&op);
+               ev != nullptr) {
+      if (ev->direction == terminal::EventMoveCursor::Direction::LEFT) {
+        RETERR(doc.backward());
+      } else if (ev->direction == terminal::EventMoveCursor::Direction::RIGHT) {
+        RETERR(doc.forward());
       }
-    }
-
-    if (utils::is_command(c, utils::CommandType::BACKSPACE)) {
-      handle_rebuild_ast(root, buffer);
-      continue;
-    }
-
-    if (utils::is_command(c, utils::CommandType::TAB) &&
-        root->current() != nullptr) {
-      handle_completion(repl, root, buffer);
-      continue;
-    }
-
-    if (utils::is_command(c, utils::CommandType::END) && root->empty()) {
-      handle_cin_eof(root, buffer);
-      break;
+    } else if (auto* ev = std::get_if<terminal::EventSpecialKey>(&op);
+               ev != nullptr) {
+      if (ev->key == terminal::EventSpecialKey::Key::BACKSPACE) {
+        RETERR(doc.remove());
+      }
     }
   }
   root->parse_next('\0');
 
   root->replace_all(is_home, home_to_text);
 
+  auto _ = doc.leave();
   return ParseQuery{ root, make_redirects(root) };
 } catch (const std::exception& e) {
   return error::err(error::ErrorCode::UNKNOWN, e.what());
 }
 
+// void
+// TokenParser::handle_completion(repl::Repl& repl,
+//                                ast::Root::Ptr& root,
+//                                utils::CommandBuffer& buffer)
+// {
+//   // end current token
+//   root->current()->parse_next('\0');
+
+//   auto curr = root->current()->string();
+//   auto res = repl.find_fuzzy(curr);
+
+//   if (!res.empty() && res.front().size() > curr.size()) {
+//     auto s = res.front().substr(curr.size());
+//     buffer.insert(s);
+//     root->current()->current(std::make_shared<ast::Text>(s));
+//   }
+// }
+
 void
-TokenParser::handle_completion(repl::Repl& repl,
-                               ast::Root::Ptr& root,
-                               utils::CommandBuffer& buffer)
+TokenParser::handle_rebuild_ast(repl::Repl& repl, ast::Root::Ptr& root)
 {
-  // end current token
-  root->current()->parse_next('\0');
+  auto& doc = repl.doc();
 
-  auto curr = root->current()->string();
-  auto res = repl.find_fuzzy(curr);
-
-  if (!res.empty() && res.front().size() > curr.size()) {
-    auto s = res.front().substr(curr.size());
-    buffer.insert(s);
-    root->current()->current(std::make_shared<ast::Text>(s));
-  }
-}
-
-void
-TokenParser::handle_rebuild_ast(ast::Root::Ptr& root,
-                                utils::CommandBuffer& buffer)
-{
   root->clear();
-  for (auto c : buffer.string()) {
+  for (auto c : doc.string()) {
     root->parse_next(c);
   }
 }
 
-void
-TokenParser::handle_cin_eof(ast::Root::Ptr& root, utils::CommandBuffer& buffer)
-{
-  root->add(std::make_shared<ast::Text>("exit"));
-  buffer.insert("exit");
-}
+// void
+// TokenParser::handle_cin_eof(ast::Root::Ptr& root, utils::CommandBuffer&
+// buffer)
+// {
+//   root->add(std::make_shared<ast::Text>("exit"));
+//   buffer.insert("exit");
+// }
 
 std::vector<std::shared_ptr<utils::RedirectOperation>>
 TokenParser::make_redirects(ast::Root::Ptr& root)
@@ -153,4 +147,5 @@ TokenParser::make_redirects(ast::Root::Ptr& root)
 
   return redirects;
 }
+
 }

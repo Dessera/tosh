@@ -5,6 +5,7 @@
 #include "tosh/error.hpp"
 #include "tosh/parser/parser.hpp"
 #include "tosh/parser/query.hpp"
+#include "tosh/terminal/document.hpp"
 
 #include <functional>
 #include <map>
@@ -20,11 +21,16 @@ class TOSH_EXPORT Repl
 {
 private:
   std::map<std::string, std::shared_ptr<builtins::BaseCommand>> _builtins;
+  terminal::Document _doc;
+
   parser::TokenParser _parser{};
   pid_t _subpid{ -1 };
 
 public:
-  Repl();
+  Repl(terminal::Document doc);
+
+  TOSH_DELETE_COPY(Repl)
+  TOSH_DEFAULT_MOVE(Repl)
 
   /**
    * @brief Repl entry point
@@ -41,13 +47,6 @@ public:
   error::Result<int> run_proc(
     parser::ParseQuery& query,
     const std::function<error::Result<int>(parser::ParseQuery&)>& callback);
-
-  /**
-   * @brief Get token parser
-   *
-   * @return constexpr auto& Token parser
-   */
-  constexpr auto& parser() noexcept { return _parser; }
 
   /**
    * @brief Check if builtin exists
@@ -104,9 +103,18 @@ public:
   std::vector<std::string> find_fuzzy(std::string_view command);
 
   /**
-   * @brief Handle SIGINT signal
+   * @brief Handle signal
    */
-  void sigint_handler();
+  void signal_handler(int sig);
+
+  /**
+   * @brief Get the document (user terminal interface)
+   *
+   * @return constexpr auto& Document
+   */
+  constexpr auto& doc() noexcept { return _doc; }
+
+  static error::Result<Repl> create();
 
 private:
   /**
@@ -116,13 +124,6 @@ private:
    * @param name Name of builtin to run
    */
   void run_builtin(parser::ParseQuery& query, const std::string& name);
-
-  /**
-   * @brief Get the shell prompt
-   *
-   * @return std::string Shell prompt
-   */
-  std::string get_prompt();
 };
 
 }
