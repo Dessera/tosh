@@ -4,14 +4,14 @@
 
 namespace tosh::builtins {
 
-class TOSH_EXPORT Sete : public BaseCommand
+class Sete : public BaseCommand
 {
 public:
   error::Result<int> execute(repl::Repl& repl,
                              parser::ParseQuery& query) override;
 };
 
-class TOSH_EXPORT Unsete : public BaseCommand
+class Unsete : public BaseCommand
 {
 public:
   error::Result<int> execute(repl::Repl& repl,

@@ -4,12 +4,12 @@
 #include "tosh/parser/ast/expr.hpp"
 #include "tosh/parser/ast/redirect.hpp"
 #include "tosh/parser/ast/root.hpp"
+#include "tosh/parser/parser.hpp"
 #include "tosh/parser/query.hpp"
 #include "tosh/repl.hpp"
 #include "tosh/utils/redirect.hpp"
 
 #include <cstdio>
-#include <exception>
 #include <memory>
 #include <print>
 #include <ranges>
@@ -53,8 +53,9 @@ namespace tosh::parser {
 
 error::Result<ParseQuery>
 TokenParser::parse(repl::Repl& repl)
-try {
+{
   auto& doc = repl.doc();
+  RETERR(doc.enter());
 
   ast::Root::Ptr root = std::make_shared<ast::Root>();
 
@@ -62,61 +63,120 @@ try {
     auto op = UNWRAPERR(doc.get_op());
 
     if (auto* ev = std::get_if<terminal::EventGetString>(&op); ev != nullptr) {
-      for (auto c : ev->str) {
-        RETERR(doc.insert(c));
+      if (UNWRAPERR(handle_user_input(repl, root, *ev))) {
+        break;
       }
-      handle_rebuild_ast(repl, root);
     } else if (auto* ev = std::get_if<terminal::EventMoveCursor>(&op);
                ev != nullptr) {
-      if (ev->direction == terminal::EventMoveCursor::Direction::LEFT) {
-        RETERR(doc.backward());
-      } else if (ev->direction == terminal::EventMoveCursor::Direction::RIGHT) {
-        RETERR(doc.forward());
-      }
+      RETERR(handle_move_cursor(repl, root, *ev));
     } else if (auto* ev = std::get_if<terminal::EventSpecialKey>(&op);
                ev != nullptr) {
-      if (ev->key == terminal::EventSpecialKey::Key::BACKSPACE) {
-        RETERR(doc.remove());
+      if (UNWRAPERR(handle_special_key(repl, root, *ev))) {
+        break;
       }
     }
   }
+
   root->parse_next('\0');
 
   root->replace_all(is_home, home_to_text);
 
-  auto _ = doc.leave();
   return ParseQuery{ root, make_redirects(root) };
-} catch (const std::exception& e) {
-  return error::err(error::ErrorCode::UNKNOWN, e.what());
 }
 
-// void
-// TokenParser::handle_completion(repl::Repl& repl,
-//                                ast::Root::Ptr& root,
-//                                utils::CommandBuffer& buffer)
-// {
-//   // end current token
-//   root->current()->parse_next('\0');
-
-//   auto curr = root->current()->string();
-//   auto res = repl.find_fuzzy(curr);
-
-//   if (!res.empty() && res.front().size() > curr.size()) {
-//     auto s = res.front().substr(curr.size());
-//     buffer.insert(s);
-//     root->current()->current(std::make_shared<ast::Text>(s));
-//   }
-// }
-
-void
-TokenParser::handle_rebuild_ast(repl::Repl& repl, ast::Root::Ptr& root)
+error::Result<void>
+TokenParser::handle_completion(repl::Repl& repl, ast::Root::Ptr& root)
 {
   auto& doc = repl.doc();
 
-  root->clear();
-  for (auto c : doc.string()) {
-    root->parse_next(c);
+  if (!doc.end()) {
+    return {};
   }
+
+  root->current()->parse_next('\0');
+
+  auto curr = root->current()->string();
+  auto res = repl.find_fuzzy(curr);
+
+  if (!res.empty() && res.front().size() > curr.size()) {
+    auto s = res.front().substr(curr.size());
+
+    for (auto c : s) {
+      RETERR(doc.insert(c));
+    }
+
+    root->current()->current(std::make_shared<ast::Text>(s));
+  }
+
+  return {};
+}
+
+error::Result<bool>
+TokenParser::handle_user_input(repl::Repl& repl,
+                               ast::Root::Ptr& root,
+                               const terminal::EventGetString& event)
+{
+  auto& doc = repl.doc();
+
+  for (auto c : event.str) {
+    RETERR(doc.insert(c));
+  }
+
+  if (!doc.end()) {
+    root->clear();
+    for (auto c : doc.string()) {
+      if (root->parse_next(c) == ast::ParseState::END) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  for (auto c : event.str) {
+    if (root->parse_next(c) == ast::ParseState::END) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+error::Result<void>
+TokenParser::handle_move_cursor(repl::Repl& repl,
+                                ast::Root::Ptr& /*root*/,
+                                const terminal::EventMoveCursor& event)
+{
+  auto& doc = repl.doc();
+
+  if (event.direction == terminal::EventMoveCursor::Direction::LEFT) {
+    RETERR(doc.backward());
+  } else if (event.direction == terminal::EventMoveCursor::Direction::RIGHT) {
+    RETERR(doc.forward());
+  }
+
+  return {};
+}
+
+error::Result<bool>
+TokenParser::handle_special_key(repl::Repl& repl,
+                                ast::Root::Ptr& root,
+                                const terminal::EventSpecialKey& event)
+{
+  auto& doc = repl.doc();
+
+  if (event.key == terminal::EventSpecialKey::Key::BACKSPACE) {
+    RETERR(doc.remove());
+    root->clear();
+    for (auto c : doc.string()) {
+      if (root->parse_next(c) == ast::ParseState::END) {
+        return true;
+      }
+    }
+  } else if (event.key == terminal::EventSpecialKey::Key::TAB) {
+    RETERR(handle_completion(repl, root));
+  }
+
+  return false;
 }
 
 // void

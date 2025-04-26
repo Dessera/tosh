@@ -196,48 +196,6 @@ Terminal::get_op()
 }
 
 error::Result<void>
-Terminal::enable()
-{
-  int _in_fd = fileno(_in);
-
-  // NOLINTNEXTLINE
-  termios term;
-  if (tcgetattr(_in_fd, &term) == -1) {
-    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
-  }
-
-  term.c_lflag &= ~(ICANON | ECHO);
-  if (tcsetattr(_in_fd, TCSANOW, &term) == -1) {
-    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
-  }
-
-  RETERR(_reader.start());
-
-  return {};
-}
-
-error::Result<void>
-Terminal::disable()
-{
-  int _in_fd = fileno(_in);
-
-  // NOLINTNEXTLINE
-  termios term;
-  if (tcgetattr(_in_fd, &term) == -1) {
-    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
-  }
-
-  term.c_lflag |= (ICANON | ECHO);
-  if (tcsetattr(_in_fd, TCSANOW, &term) == -1) {
-    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
-  }
-
-  RETERR(_reader.stop());
-
-  return {};
-}
-
-error::Result<void>
 Terminal::putc_impl(char c)
 {
   if (std::fputc(c, _out) == EOF) {
@@ -250,6 +208,10 @@ Terminal::putc_impl(char c)
 error::Result<void>
 Terminal::puts_impl(std::string_view str)
 {
+  if (str.size() == 0) {
+    return {};
+  }
+
   if (std::fwrite(str.data(), str.size(), 1, _out) == 0) {
     return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
   }
@@ -263,10 +225,25 @@ Terminal::create(std::FILE* out, std::FILE* in)
   assert(out != nullptr);
   assert(in != nullptr);
 
+  int in_fd = fileno(in);
+
+  // NOLINTNEXTLINE
+  termios term;
+  if (tcgetattr(in_fd, &term) == -1) {
+    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  }
+
+  term.c_lflag &= ~(ICANON | ECHO);
+  if (tcsetattr(in_fd, TCSANOW, &term) == -1) {
+    return error::err(error::ErrorCode::UNEXPECTED_IO_STATUS);
+  }
+
   auto reader = EventReader::create(in);
   if (!reader.has_value()) {
     return std::unexpected(reader.error());
   }
+
+  RETERR(reader.value().start());
 
   return Terminal{ out, in, std::move(reader.value()) };
 }

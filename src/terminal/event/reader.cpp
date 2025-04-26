@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstdio>
 #include <event2/event.h>
+#include <event2/thread.h>
 #include <expected>
 #include <memory>
 #include <string_view>
@@ -37,6 +38,10 @@ EventReader::create(std::FILE* in)
 
   auto queue = std::make_unique<EventQueue>();
 
+  if (evthread_use_pthreads() == -1) {
+    return error::err(error::ErrorCode::EVENT_LOOP_FAILED);
+  }
+
   auto base = EventBasePtr(event_base_new());
   if (base == nullptr) {
     return error::err(error::ErrorCode::EVENT_LOOP_FAILED);
@@ -58,7 +63,7 @@ EventReader::create(std::FILE* in)
 error::Result<void>
 EventReader::start()
 try {
-  _eloop = std::make_unique<std::jthread>(handle_event_loop, this);
+  _eloop = std::make_unique<std::jthread>(handle_event_loop, this->_base.get());
   return {};
 } catch (const std::exception& e) {
   return error::err(error::ErrorCode::EVENT_LOOP_FAILED, e.what());
@@ -67,7 +72,7 @@ try {
 error::Result<void>
 EventReader::stop()
 {
-  event_base_loopbreak(_base.get());
+  event_base_loopexit(_base.get(), nullptr);
 
   if (_eloop != nullptr) {
     _eloop = nullptr;
@@ -77,10 +82,10 @@ EventReader::stop()
 }
 
 void
-EventReader::handle_event_loop(EventReader* reader)
+EventReader::handle_event_loop(event_base* base)
 {
-  assert(reader != nullptr);
-  event_base_dispatch(reader->_base.get());
+  assert(base != nullptr);
+  event_base_dispatch(base);
 }
 
 void

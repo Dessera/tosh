@@ -73,13 +73,6 @@ public:
   error::Result<void> enter();
 
   /**
-   * @brief End the current command
-   *
-   * @return error::Result<void> Operation result
-   */
-  error::Result<void> leave();
-
-  /**
    * @brief Resize the terminal with current win size
    *
    * @return error::Result<void> Operation result
@@ -119,16 +112,6 @@ private:
    * @return TermCursor Cursor position for the prompt
    */
   [[nodiscard]] TermCursor prompt_cursor() const;
-};
-
-class TOSH_EXPORT DocumentGuard
-{
-private:
-  Document* _doc;
-
-public:
-  DocumentGuard(Document& doc);
-  ~DocumentGuard();
 };
 
 }

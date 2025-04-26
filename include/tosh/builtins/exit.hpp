@@ -4,11 +4,11 @@
 
 namespace tosh::builtins {
 
-class TOSH_EXPORT Exit : public BaseCommand
+class Exit : public BaseCommand
 {
 public:
   error::Result<int> execute(repl::Repl& repl,
-                              parser::ParseQuery& query) override;
+                             parser::ParseQuery& query) override;
 };
 
 }

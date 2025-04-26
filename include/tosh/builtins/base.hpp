@@ -12,7 +12,7 @@ class Repl;
 
 namespace tosh::builtins {
 
-class TOSH_EXPORT BaseCommand
+class BaseCommand
 {
 public:
   virtual ~BaseCommand() = default;

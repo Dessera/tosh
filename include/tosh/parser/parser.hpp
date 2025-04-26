@@ -2,8 +2,10 @@
 
 #include "tosh/common.hpp"
 #include "tosh/error.hpp"
+#include "tosh/parser/ast/base.hpp"
 #include "tosh/parser/ast/root.hpp"
 #include "tosh/parser/query.hpp"
+#include "tosh/terminal/event/parser.hpp"
 #include "tosh/utils/redirect.hpp"
 #include <memory>
 #include <vector>
@@ -30,23 +32,13 @@ public:
 
 private:
   /**
-   * @brief Completes the current token
+   * @brief Handles the completion of the input
    *
    * @param repl The repl object
    * @param root The root node of the AST
-   * @param buffer The command buffer
+   * @return error::Result<void> Operation result
    */
-  // void handle_completion(repl::Repl& repl,
-  //                        ast::Root::Ptr& root,
-  //                        utils::CommandBuffer& buffer);
-
-  /**
-   * @brief Rebuilds the AST
-   *
-   * @param root The root node of the AST
-   * @param buffer The command buffer
-   */
-  void handle_rebuild_ast(repl::Repl& repl, ast::Root::Ptr& root);
+  error::Result<void> handle_completion(repl::Repl& repl, ast::Root::Ptr& root);
 
   /**
    * @brief Handles the end of the input
@@ -55,6 +47,20 @@ private:
    * @param buffer The command buffer
    */
   // void handle_cin_eof(ast::Root::Ptr& root, utils::CommandBuffer& buffer);
+
+  error::Result<bool> handle_user_input(repl::Repl& repl,
+                                        ast::Root::Ptr& root,
+                                        const terminal::EventGetString& event);
+
+  error::Result<void> handle_move_cursor(
+    repl::Repl& repl,
+    ast::Root::Ptr& root,
+    const terminal::EventMoveCursor& event);
+
+  error::Result<bool> handle_special_key(
+    repl::Repl& repl,
+    ast::Root::Ptr& root,
+    const terminal::EventSpecialKey& event);
 
   /**
    * @brief Creates the redirects from the AST

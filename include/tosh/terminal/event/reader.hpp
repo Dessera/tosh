@@ -37,9 +37,11 @@ public:
 private:
   EventBasePtr _base;
   EventPtr _event;
+  EventPtr _timeout_event;
   std::unique_ptr<EventQueue> _queue;
 
   std::unique_ptr<std::jthread> _eloop{ nullptr };
+  bool _running{ false };
 
 public:
   EventReader(EventBasePtr base,
@@ -78,7 +80,7 @@ public:
   static error::Result<EventReader> create(std::FILE* in);
 
 private:
-  static void handle_event_loop(EventReader* reader);
+  static void handle_event_loop(event_base* base);
   static void handle_event(evutil_socket_t fd, short events, void* arg);
 };
 

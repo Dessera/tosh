@@ -75,8 +75,6 @@ void
 Repl::run()
 {
   while (true) {
-    terminal::DocumentGuard guard{ _doc };
-
     auto res = _parser.parse(*this);
     if (!res.has_value()) {
       res.error().log();
@@ -130,9 +128,11 @@ Repl::run_proc(
     }
     if (auto res = callback(query); !res.has_value()) {
       res.error().log();
-      std::exit(EXIT_FAILURE);
+      // std::exit(EXIT_FAILURE);
+      _exit(EXIT_FAILURE);
     } else {
-      std::exit(res.value());
+      // std::exit(res.value());
+      _exit(res.value());
     }
   } else if (pid > 0) {
     _subpid = pid;

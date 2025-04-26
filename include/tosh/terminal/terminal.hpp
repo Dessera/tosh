@@ -174,20 +174,6 @@ public:
 
   error::Result<Event> get_op();
 
-  /**
-   * @brief Enable raw mode
-   *
-   * @return error::Result<void> Operation result
-   */
-  error::Result<void> enable();
-
-  /**
-   * @brief Disable raw mode
-   *
-   * @return error::Result<void> Operation result
-   */
-  error::Result<void> disable();
-
   static error::Result<Terminal> create(std::FILE* out, std::FILE* in);
 
 private:

@@ -4,7 +4,7 @@
 
 namespace tosh::builtins {
 
-class TOSH_EXPORT CheckArgs : public BaseCommand
+class CheckArgs : public BaseCommand
 {
 public:
   error::Result<int> execute(repl::Repl& repl,

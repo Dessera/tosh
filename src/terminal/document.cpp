@@ -223,17 +223,12 @@ Document::enter()
 
   _cpos = prompt_cursor();
 
-  RETERR(_term.enable());
+  auto pcur = UNWRAPERR(_term.cursor());
+  if (pcur.x != 0) {
+    RETERR(_term.putc('\n'));
+  }
+
   RETERR(_term.puts(_prompt));
-
-  return {};
-}
-
-error::Result<void>
-Document::leave()
-{
-  RETERR(_term.putc('\n'));
-  RETERR(_term.disable());
 
   return {};
 }
@@ -264,7 +259,8 @@ Document::string() const
   namespace views = std::ranges::views;
   namespace ranges = std::ranges;
 
-  return _buffer | views::join | ranges::to<std::string>();
+  return _buffer | views::join | views::drop(_prompt.size()) |
+         ranges::to<std::string>();
 }
 
 error::Result<Document>
@@ -354,17 +350,6 @@ Document::prompt_cursor() const
   }
 
   return { .x = x, .y = y };
-}
-
-DocumentGuard::DocumentGuard(Document& doc)
-  : _doc{ &doc }
-{
-  LOGERR_EXIT(_doc->enter());
-}
-
-DocumentGuard::~DocumentGuard()
-{
-  auto _ = _doc->leave();
 }
 
 }

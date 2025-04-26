@@ -6,6 +6,7 @@ project(
 )
 
 libevent = dependency('libevent')
+libevent_pthreads = dependency('libevent_pthreads')
 
 magic_enum_proj = subproject('magic_enum')
 magic_enum_dep = magic_enum_proj.get_variable('magic_enum_dep')
@@ -20,7 +21,7 @@ lib_inc = include_directories('include')
 shlib = shared_library(
   'tosh',
   lib_src,
-  dependencies: [magic_enum_dep, libevent],
+  dependencies: [magic_enum_dep, libevent, libevent_pthreads],
   include_directories: lib_inc,
   gnu_symbol_visibility: 'hidden',
   cpp_args: ['-Wall', '-Wno-pedantic'],
@@ -33,7 +34,7 @@ tosh_dep = declare_dependency(include_directories: lib_inc, link_with: shlib)
 
 inc = include_directories('include')
 src = files('src/main.cpp')
-deps = [tosh_dep, magic_enum_dep, libevent]
+deps = [tosh_dep, magic_enum_dep, libevent, libevent_pthreads]
 
 executable(
   'tosh',
