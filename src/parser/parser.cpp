@@ -63,6 +63,14 @@ make_home_dir(Token::Ptr& root)
   });
 }
 
+constexpr void
+clean_null_tokens(Token::Ptr& root)
+{
+  root->remove_all([](const auto& token) {
+    return token.type() == TokenType::EXPR && token.string().empty();
+  });
+}
+
 error::Result<void>
 handle_completion(repl::Repl& repl, Token::Ptr& root)
 {
@@ -201,6 +209,7 @@ parse(repl::Repl& repl)
   root->parse_next('\0');
 
   make_home_dir(root);
+  clean_null_tokens(root);
 
   return ParseQuery{ root, make_redirects(root) };
 }

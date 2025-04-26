@@ -18,7 +18,7 @@ QuoteBackslash::on_continue(char c)
     return ParseState::END_PASS;
   }
 
-  if (is_quote(c) || c == '\\') {
+  if (c == static_cast<char>(_quote) || c == '\\') {
     _bs_char = c;
     return ParseState::END_PASS;
   }
@@ -51,7 +51,7 @@ QuoteText::QuoteText(std::string text, QuoteType quote)
 ParseState
 QuoteText::on_continue(char c)
 {
-  if (QuoteBackslash::validate(c) || is_quote(c)) {
+  if (QuoteBackslash::validate(c) || c == static_cast<char>(_quote)) {
     return ParseState::END;
   }
 

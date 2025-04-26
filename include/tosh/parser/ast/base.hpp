@@ -277,7 +277,7 @@ private:
                     }) |
                     views::join_with('\n') | ranges::to<std::string>();
 
-    return std::format("{}{}: \n{}",
+    return std::format("{}{}:\n{}",
                        std::string(level * 2, ' '),
                        magic_enum::enum_name(token->type()),
                        children);

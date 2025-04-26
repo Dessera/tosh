@@ -5,6 +5,8 @@ project(
   default_options: ['warning_level=3', 'cpp_std=gnu++26'],
 )
 
+# Dependencies
+
 libevent = dependency('libevent')
 libevent_pthreads = dependency('libevent_pthreads')
 
@@ -14,14 +16,17 @@ magic_enum_dep = magic_enum_proj.get_variable('magic_enum_dep')
 catch2_proj = subproject('catch2')
 catch2_with_main_dep = catch2_proj.get_variable('catch2_with_main_dep')
 
+# Project
+
 subdir('src')
 
 lib_inc = include_directories('include')
+lib_deps = [magic_enum_dep, libevent, libevent_pthreads]
 
 shlib = shared_library(
   'tosh',
   lib_src,
-  dependencies: [magic_enum_dep, libevent, libevent_pthreads],
+  dependencies: lib_deps,
   include_directories: lib_inc,
   gnu_symbol_visibility: 'hidden',
   cpp_args: ['-Wall', '-Wno-pedantic'],
@@ -34,7 +39,8 @@ tosh_dep = declare_dependency(include_directories: lib_inc, link_with: shlib)
 
 inc = include_directories('include')
 src = files('src/main.cpp')
-deps = [tosh_dep, magic_enum_dep, libevent, libevent_pthreads]
+deps = [tosh_dep]
+deps += lib_deps
 
 executable(
   'tosh',
@@ -44,8 +50,9 @@ executable(
   install: true,
 )
 
-# test('tosh', exe)
 subdir('tests')
+
+# PkgConfig
 
 libs = [shlib]
 

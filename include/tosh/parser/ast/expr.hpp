@@ -1,11 +1,10 @@
 #pragma once
 
-#include "tosh/common.hpp"
 #include "tosh/parser/ast/base.hpp"
 
 namespace tosh::ast {
 
-class TOSH_EXPORT Backslash : public Token
+class Backslash : public Token
 {
 private:
   char _bs_token{};
@@ -19,7 +18,7 @@ public:
   [[nodiscard]] std::string string() const override;
 };
 
-class TOSH_EXPORT Text : public Token
+class Text : public Token
 {
 private:
   std::string _str;
@@ -32,7 +31,7 @@ public:
   [[nodiscard]] std::string string() const override;
 };
 
-class TOSH_EXPORT HomeDir : public Token
+class HomeDir : public Token
 {
 private:
   bool _slash{ false };
@@ -47,7 +46,7 @@ public:
   [[nodiscard]] std::string home() const;
 };
 
-class TOSH_EXPORT Expr : public Token
+class Expr : public Token
 {
 public:
   Expr();

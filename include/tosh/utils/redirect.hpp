@@ -1,8 +1,8 @@
 #pragma once
 
-#include "magic_enum/magic_enum.hpp"
-#include "tosh/common.hpp"
 #include "tosh/error.hpp"
+
+#include <magic_enum/magic_enum.hpp>
 
 #include <algorithm>
 #include <array>
@@ -22,7 +22,7 @@ class ParseQuery;
 
 namespace tosh::utils {
 
-enum class TOSH_EXPORT RedirectType : uint8_t
+enum class RedirectType : uint8_t
 {
   OUT,       // >
   APPEND,    // >>
