@@ -105,6 +105,8 @@ Document::remove()
   namespace views = std::ranges::views;
   namespace ranges = std::ranges;
 
+  TermCursorHideGuard guard{ _term };
+
   if (prompt_cursor() == _cpos) {
     return {};
   }
@@ -246,6 +248,7 @@ Document::resize()
   _cpos.x = _buffer.back().size();
 
   RETERR(_term.up(_cpos.y, true));
+  RETERR(_term.clean(CleanType::TOEND));
 
   auto str = _buffer | views::join | ranges::to<std::string>();
   RETERR(_term.puts(str));
@@ -293,13 +296,8 @@ Document::rebuild_buffer(size_t start)
   std::string line{};
   for (auto c : str) {
     line.push_back(c);
-    if (line.size() >= _wsize.x) {
-      _buffer.push_back(line);
-      line.clear();
-      continue;
-    }
 
-    if (c == '\n') {
+    if (line.size() >= _wsize.x || c == '\n') {
       _buffer.push_back(line);
       line.clear();
     }

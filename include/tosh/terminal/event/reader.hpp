@@ -37,16 +37,15 @@ public:
 private:
   EventBasePtr _base;
   EventPtr _event;
-  EventPtr _timeout_event;
   std::unique_ptr<EventQueue> _queue;
 
-  std::unique_ptr<std::jthread> _eloop{ nullptr };
-  bool _running{ false };
+  std::jthread _eloop;
 
 public:
   EventReader(EventBasePtr base,
               EventPtr ev,
-              std::unique_ptr<EventQueue> queue);
+              std::unique_ptr<EventQueue> queue,
+              std::jthread eloop);
   ~EventReader();
 
   TOSH_DELETE_COPY(EventReader)
@@ -62,20 +61,6 @@ public:
   {
     return _queue->read(std::forward<decltype(pred)>(pred));
   }
-
-  /**
-   * @brief Start the event loop
-   *
-   * @return error::Result<void> Operation result
-   */
-  error::Result<void> start();
-
-  /**
-   * @brief Stop the event loop
-   *
-   * @return error::Result<void> Operation result
-   */
-  error::Result<void> stop();
 
   static error::Result<EventReader> create(std::FILE* in);
 

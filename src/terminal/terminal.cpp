@@ -243,8 +243,6 @@ Terminal::create(std::FILE* out, std::FILE* in)
     return std::unexpected(reader.error());
   }
 
-  RETERR(reader.value().start());
-
   return Terminal{ out, in, std::move(reader.value()) };
 }
 

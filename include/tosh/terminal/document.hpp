@@ -13,7 +13,7 @@
 
 namespace tosh::terminal {
 
-class TOSH_EXPORT Document
+class Document
 {
 private:
   std::string _prompt;

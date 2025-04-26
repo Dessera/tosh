@@ -45,6 +45,7 @@ struct EventSpecialKey
   enum class Key : uint8_t
   {
     TAB = 9,
+    KEOF = 4,
     BACKSPACE = 127,
   };
 

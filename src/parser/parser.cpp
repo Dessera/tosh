@@ -13,79 +13,58 @@
 #include <memory>
 #include <print>
 #include <ranges>
-#include <string>
 #include <sys/types.h>
 #include <termios.h>
-#include <variant>
 #include <vector>
+
+using tosh::ast::Token;
+using tosh::ast::TokenFilter;
+using tosh::ast::TokenType;
+
+using tosh::utils::RedirectFactory;
+using tosh::utils::RedirectOperation;
 
 namespace {
 
-constexpr bool
-is_redirect(const tosh::ast::Token& token)
+using namespace tosh;
+
+auto
+make_redirects(Token::Ptr& root)
 {
-  return token.type() == tosh::ast::TokenType::REDIRECT;
+  namespace views = std::ranges::views;
+  namespace ranges = std::ranges;
+
+  auto redirects =
+    root->find_all(TokenFilter<TokenType::REDIRECT>()) |
+    views::transform([](const auto& token) {
+      auto ptr = std::static_pointer_cast<ast::Redirect>(token);
+      return ptr->to_op();
+    }) |
+    views::filter([](const auto& op) { return op.has_value(); }) |
+    views::transform(
+      [](const auto& op) { return RedirectFactory::create(op.value()); }) |
+    ranges::to<std::vector<std::shared_ptr<RedirectOperation>>>();
+
+  root->remove_all([](const auto& token) {
+    return token.type() == TokenType::REDIRECT ||
+           (token.nodes().size() == 1 &&
+            token.nodes().front()->type() == TokenType::REDIRECT);
+  });
+
+  return redirects;
 }
 
-constexpr bool
-is_home(const tosh::ast::Token& token)
+constexpr void
+make_home_dir(Token::Ptr& root)
 {
-  return token.type() == tosh::ast::TokenType::HOME;
-}
-
-constexpr bool
-is_redirect_expr(const tosh::ast::Token& token)
-{
-  return is_redirect(token) ||
-         (token.nodes().size() == 1 && is_redirect(*token.nodes().front()));
-}
-
-constexpr auto
-home_to_text(const tosh::ast::Token::Ptr& token)
-{
-  auto ptr = std::static_pointer_cast<tosh::ast::HomeDir>(token);
-  return std::make_shared<tosh::ast::Text>(ptr->home());
-}
-
-}
-
-namespace tosh::parser {
-
-error::Result<ParseQuery>
-TokenParser::parse(repl::Repl& repl)
-{
-  auto& doc = repl.doc();
-  RETERR(doc.enter());
-
-  ast::Root::Ptr root = std::make_shared<ast::Root>();
-
-  while (true) {
-    auto op = UNWRAPERR(doc.get_op());
-
-    if (auto* ev = std::get_if<terminal::EventGetString>(&op); ev != nullptr) {
-      if (UNWRAPERR(handle_user_input(repl, root, *ev))) {
-        break;
-      }
-    } else if (auto* ev = std::get_if<terminal::EventMoveCursor>(&op);
-               ev != nullptr) {
-      RETERR(handle_move_cursor(repl, root, *ev));
-    } else if (auto* ev = std::get_if<terminal::EventSpecialKey>(&op);
-               ev != nullptr) {
-      if (UNWRAPERR(handle_special_key(repl, root, *ev))) {
-        break;
-      }
-    }
-  }
-
-  root->parse_next('\0');
-
-  root->replace_all(is_home, home_to_text);
-
-  return ParseQuery{ root, make_redirects(root) };
+  root->replace_all(TokenFilter<TokenType::HOME>(), [](const auto& token) {
+    auto ptr = std::static_pointer_cast<ast::HomeDir>(token);
+    return std::make_shared<ast::Text>(ptr->home());
+  });
 }
 
 error::Result<void>
-TokenParser::handle_completion(repl::Repl& repl, ast::Root::Ptr& root)
+handle_completion(repl::Repl& repl, Token::Ptr& root)
 {
   auto& doc = repl.doc();
 
@@ -112,9 +91,9 @@ TokenParser::handle_completion(repl::Repl& repl, ast::Root::Ptr& root)
 }
 
 error::Result<bool>
-TokenParser::handle_user_input(repl::Repl& repl,
-                               ast::Root::Ptr& root,
-                               const terminal::EventGetString& event)
+handle_user_input(repl::Repl& repl,
+                  Token::Ptr& root,
+                  const terminal::EventGetString& event)
 {
   auto& doc = repl.doc();
 
@@ -124,15 +103,11 @@ TokenParser::handle_user_input(repl::Repl& repl,
 
   if (!doc.end()) {
     root->clear();
-    for (auto c : doc.string()) {
-      if (root->parse_next(c) == ast::ParseState::END) {
-        return true;
-      }
-    }
-    return false;
   }
 
-  for (auto c : event.str) {
+  const auto& str = doc.end() ? event.str : doc.string();
+
+  for (auto c : str) {
     if (root->parse_next(c) == ast::ParseState::END) {
       return true;
     }
@@ -142,9 +117,9 @@ TokenParser::handle_user_input(repl::Repl& repl,
 }
 
 error::Result<void>
-TokenParser::handle_move_cursor(repl::Repl& repl,
-                                ast::Root::Ptr& /*root*/,
-                                const terminal::EventMoveCursor& event)
+handle_move_cursor(repl::Repl& repl,
+                   Token::Ptr& /*root*/,
+                   const terminal::EventMoveCursor& event)
 {
   auto& doc = repl.doc();
 
@@ -158,9 +133,9 @@ TokenParser::handle_move_cursor(repl::Repl& repl,
 }
 
 error::Result<bool>
-TokenParser::handle_special_key(repl::Repl& repl,
-                                ast::Root::Ptr& root,
-                                const terminal::EventSpecialKey& event)
+handle_special_key(repl::Repl& repl,
+                   Token::Ptr& root,
+                   const terminal::EventSpecialKey& event)
 {
   auto& doc = repl.doc();
 
@@ -174,38 +149,60 @@ TokenParser::handle_special_key(repl::Repl& repl,
     }
   } else if (event.key == terminal::EventSpecialKey::Key::TAB) {
     RETERR(handle_completion(repl, root));
+  } else if (event.key == terminal::EventSpecialKey::Key::KEOF) {
+    root->clear();
+    root->current(std::make_shared<ast::Text>("exit"));
+    return true;
   }
 
   return false;
 }
 
-// void
-// TokenParser::handle_cin_eof(ast::Root::Ptr& root, utils::CommandBuffer&
-// buffer)
-// {
-//   root->add(std::make_shared<ast::Text>("exit"));
-//   buffer.insert("exit");
-// }
-
-std::vector<std::shared_ptr<utils::RedirectOperation>>
-TokenParser::make_redirects(ast::Root::Ptr& root)
+error::Result<bool>
+handle_op(repl::Repl& repl, Token::Ptr& root, const terminal::Event& event)
 {
-  namespace views = std::ranges::views;
-  namespace ranges = std::ranges;
 
-  auto redirects =
-    root->find_all(is_redirect) | views::transform([](const auto& token) {
-      auto ptr = std::static_pointer_cast<ast::Redirect>(token);
-      return ptr->to_op();
-    }) |
-    views::filter([](const auto& op) { return op.has_value(); }) |
-    views::transform([](const auto& op) {
-      return utils::RedirectFactory::create(op.value());
-    }) |
-    ranges::to<std::vector<std::shared_ptr<utils::RedirectOperation>>>();
-  root->remove_all(is_redirect_expr);
+  if (const auto* ev = std::get_if<terminal::EventGetString>(&event);
+      ev != nullptr) {
+    return UNWRAPERR(handle_user_input(repl, root, *ev));
+  }
+  if (const auto* ev = std::get_if<terminal::EventMoveCursor>(&event);
+      ev != nullptr) {
+    RETERR(handle_move_cursor(repl, root, *ev));
+    return false;
+  }
+  if (const auto* ev = std::get_if<terminal::EventSpecialKey>(&event);
+      ev != nullptr) {
+    return UNWRAPERR(handle_special_key(repl, root, *ev));
+  }
 
-  return redirects;
+  return false;
+}
+
+}
+
+namespace tosh::parser {
+
+error::Result<ParseQuery>
+parse(repl::Repl& repl)
+{
+  auto& doc = repl.doc();
+  RETERR(doc.enter());
+
+  Token::Ptr root = std::make_shared<ast::Root>();
+
+  while (true) {
+    auto event = UNWRAPERR(doc.get_op());
+    if (UNWRAPERR(handle_op(repl, root, event))) {
+      break;
+    }
+  }
+
+  root->parse_next('\0');
+
+  make_home_dir(root);
+
+  return ParseQuery{ root, make_redirects(root) };
 }
 
 }

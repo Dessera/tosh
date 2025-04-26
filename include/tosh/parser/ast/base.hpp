@@ -1,7 +1,5 @@
 #pragma once
 
-#include "tosh/common.hpp"
-
 #include <magic_enum/magic_enum.hpp>
 
 #include <concepts>
@@ -18,7 +16,7 @@ namespace tosh::ast {
 /**
  * @brief Token Type (used to identify the type of token in runtime)
  */
-enum class TOSH_EXPORT TokenType : uint8_t
+enum class TokenType : uint8_t
 {
   ROOT,          // Token Tree Root
   TEXT,          // Normal Text
@@ -35,7 +33,7 @@ enum class TOSH_EXPORT TokenType : uint8_t
 /**
  * @brief Parse State
  */
-enum class TOSH_EXPORT ParseState : uint8_t
+enum class ParseState : uint8_t
 {
   CONTINUE, // Continue parsing
   END,      // End parsing (current char is not complete)
@@ -47,7 +45,7 @@ enum class TOSH_EXPORT ParseState : uint8_t
 /**
  * @brief Base class for all AST nodes
  */
-class TOSH_EXPORT Token
+class Token
 {
 public:
   using Ptr = std::shared_ptr<Token>;
@@ -226,6 +224,22 @@ public:
     for (auto& node : nodes()) {
       node->replace_all(pred, repl);
     }
+  }
+};
+
+template<TokenType... Args>
+struct TokenFilter
+{
+  constexpr bool operator()(const tosh::ast::Token& token) const
+  {
+    return (... || filter_token<Args>(token));
+  }
+
+private:
+  template<TokenType Tp>
+  [[nodiscard]] constexpr bool filter_token(const tosh::ast::Token& token) const
+  {
+    return token.type() == Tp;
   }
 };
 

@@ -23,11 +23,11 @@ private:
   std::map<std::string, std::shared_ptr<builtins::BaseCommand>> _builtins;
   terminal::Document _doc;
 
-  parser::TokenParser _parser{};
   pid_t _subpid{ -1 };
 
 public:
   Repl(terminal::Document doc);
+  ~Repl();
 
   TOSH_DELETE_COPY(Repl)
   TOSH_DEFAULT_MOVE(Repl)

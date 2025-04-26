@@ -71,11 +71,13 @@ Repl::Repl(terminal::Document doc)
 {
 }
 
+Repl::~Repl() = default;
+
 void
 Repl::run()
 {
   while (true) {
-    auto res = _parser.parse(*this);
+    auto res = parser::parse(*this);
     if (!res.has_value()) {
       res.error().log();
       continue;

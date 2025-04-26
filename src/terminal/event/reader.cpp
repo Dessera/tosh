@@ -17,18 +17,18 @@ namespace tosh::terminal {
 
 EventReader::EventReader(EventBasePtr base,
                          EventPtr ev,
-                         std::unique_ptr<EventQueue> queue)
+                         std::unique_ptr<EventQueue> queue,
+                         std::jthread eloop)
   : _base(std::move(base))
   , _event(std::move(ev))
   , _queue(std::move(queue))
+  , _eloop(std::move(eloop))
 {
 }
 
 EventReader::~EventReader()
 {
-  if (_eloop != nullptr) {
-    event_base_loopbreak(_base.get());
-  }
+  event_base_loopbreak(_base.get());
 }
 
 error::Result<EventReader>
@@ -57,28 +57,11 @@ EventReader::create(std::FILE* in)
     return error::err(error::ErrorCode::EVENT_LOOP_FAILED);
   }
 
-  return EventReader{ std::move(base), std::move(ev), std::move(queue) };
-}
+  std::jthread eloop{ handle_event_loop, base.get() };
 
-error::Result<void>
-EventReader::start()
-try {
-  _eloop = std::make_unique<std::jthread>(handle_event_loop, this->_base.get());
-  return {};
-} catch (const std::exception& e) {
-  return error::err(error::ErrorCode::EVENT_LOOP_FAILED, e.what());
-}
-
-error::Result<void>
-EventReader::stop()
-{
-  event_base_loopexit(_base.get(), nullptr);
-
-  if (_eloop != nullptr) {
-    _eloop = nullptr;
-  }
-
-  return {};
+  return EventReader{
+    std::move(base), std::move(ev), std::move(queue), std::move(eloop)
+  };
 }
 
 void

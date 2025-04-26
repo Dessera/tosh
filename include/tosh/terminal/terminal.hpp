@@ -201,10 +201,8 @@ public:
   TermCursorHideGuard(Terminal& port);
   ~TermCursorHideGuard();
 
-  TermCursorHideGuard(const TermCursorHideGuard&) = delete;
-  TermCursorHideGuard& operator=(const TermCursorHideGuard&) = delete;
-  TermCursorHideGuard(TermCursorHideGuard&&) = delete;
-  TermCursorHideGuard& operator=(TermCursorHideGuard&&) = delete;
+  TOSH_DELETE_COPY(TermCursorHideGuard)
+  TOSH_DELETE_MOVE(TermCursorHideGuard)
 };
 
 }

@@ -1,6 +1,7 @@
 #include "tosh/terminal/event/parser.hpp"
 #include "magic_enum/magic_enum.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 
@@ -42,15 +43,22 @@ namespace tosh::terminal {
 std::optional<Event>
 parse(std::string_view input)
 {
+  namespace ranges = std::ranges;
+
   assert(!input.empty());
 
-  if (!input.starts_with('\x1b')) {
-    if (auto key = magic_enum::enum_cast<EventSpecialKey::Key>(input.front());
-        key.has_value()) {
-      return EventSpecialKey{ key.value() };
-    }
+  if (auto key = magic_enum::enum_cast<EventSpecialKey::Key>(input.front());
+      key.has_value()) {
+    return EventSpecialKey{ key.value() };
+  }
 
+  if (ranges::all_of(
+        input, [](char c) { return (c >= ' ' && c <= '~') || c == '\n'; })) {
     return EventGetString{ std::string(input) };
+  }
+
+  if (!input.starts_with('\x1b')) {
+    return std::nullopt;
   }
 
   switch (input.back()) {
